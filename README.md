@@ -1,5 +1,5 @@
 # Java library for distributed snapshot
-Assignment: 
+Assignment:
 Implement in Java a library that offers the capability of storing a distributed snapshot on disk.
 The library should be state and message agnostic.
 Implement also an application that uses the library to cope with node failures (restarting from
