@@ -36,7 +36,7 @@ public abstract class SnapshotCreator
 
     synchronized void connectionAccepted(Socket connection)
     {
-        ConnectionManager newConnectionM = new ConnectionManager(connection);
+        ConnectionManager newConnectionM = new ConnectionManager(messages, connection);
         connections.add(newConnectionM);
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
