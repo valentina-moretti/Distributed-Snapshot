@@ -1,7 +1,6 @@
 package org.project;
 
-import java.io.BufferedReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 
 /**
@@ -11,12 +10,14 @@ class ConnectionManager extends Thread
 {
     private final Socket socket;
     private BufferedReader in;
+    private BufferedWriter out;
     private MessageBuffer messageBuffer;
 
-    ConnectionManager(MessageBuffer messageBuffer, Socket socket)
-    {
+    ConnectionManager(MessageBuffer messageBuffer, Socket socket) throws IOException {
         this.socket = socket;
         this.messageBuffer = messageBuffer;
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
 
 
@@ -59,8 +60,23 @@ class ConnectionManager extends Thread
     }
 
 
-    public synchronized void send(Message message)
-    {
 
+    synchronized public void send(Message message ) {
+        String stringToSend = toString(message);
+
+        //null only in tests
+        if (out == null) {
+            return;
+        }
+
+        try {
+            out.write(stringToSend);
+            out.flush();
+        } catch (IOException e) {
+                e.printStackTrace();
+        }
+            return;
     }
+
+
 }

@@ -1,6 +1,8 @@
 package org.project;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 class MessageBuffer
 {
@@ -22,7 +24,7 @@ class MessageBuffer
 
     synchronized void addClient(String name)
     {
-        incomingMessages.put(name, new AbstractQueue<Message>());
+        incomingMessages.put(name, new LinkedBlockingQueue<Message>());
     }
 
     synchronized void addMessage(String name, Message message)
@@ -39,4 +41,3 @@ class MessageBuffer
     {
         return incomingMessages.get(name).peek();
     }
-}

@@ -1,6 +1,9 @@
 package org.project;
 
+
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -8,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 
 public abstract class SnapshotCreator
@@ -47,7 +51,7 @@ public abstract class SnapshotCreator
     synchronized public String connect_to(InetAddress address) throws IOException
     {
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket);
+        ConnectionManager newConnectionM = new ConnectionManager(messages, socket);
         connections.add(newConnectionM);
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
@@ -59,11 +63,13 @@ public abstract class SnapshotCreator
     synchronized public Message receive(String name)
     {
         //popMessage
+        return messages.popMessage(name);
     }
 
-    synchronized public void send(String name, Message )
+    synchronized public void send(String name, Message message )
     {
-
+        ConnectionManager connectionManager= nameToConnection.get(name);
+        connectionManager.send(message);
     }
 
     synchronized public void add_entity(Serializable newObject)
