@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public abstract class SnapshotCreator
+public class SnapshotCreator
 {
     static final int serverPort=55831;
     private List<Serializable> contextObjects;
@@ -36,21 +36,22 @@ public abstract class SnapshotCreator
 
     synchronized void connectionAccepted(Socket connection)
     {
-        ConnectionManager newConnectionM = new ConnectionManager(connection);
-        connections.add(newConnectionM);
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+        connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
     }
 
     synchronized public String connect_to(InetAddress address) throws IOException
     {
-        Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket);
-        connections.add(newConnectionM);
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
+        Socket socket = new Socket(address, serverPort);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+        connections.add(newConnectionM);
+
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
         return name;
