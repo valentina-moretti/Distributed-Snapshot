@@ -13,7 +13,7 @@ import java.util.Map;
 public abstract class SnapshotCreator
 {
     static final int serverPort=55831;
-    private List<Serializable> savedObjects;
+    private List<Serializable> contextObjects;
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
     private int numOfConnections;
@@ -24,8 +24,8 @@ public abstract class SnapshotCreator
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        savedObjects = new ArrayList<>();
-        savedObjects.add(mainObject);
+        contextObjects = new ArrayList<>();
+        contextObjects.add(mainObject);
         messages = new MessageBuffer();
         nameToConnection = new HashMap<>();
         connections = new ArrayList<>();
@@ -56,18 +56,18 @@ public abstract class SnapshotCreator
         return name;
     }
 
-    synchronized public Message receive(String name)
+    synchronized public Message readMessage(String name)
     {
-        //popMessage
+        return messages.popMessage(name);
     }
 
-    synchronized public void send(String name, Message )
+    synchronized public void send(String name, Message message)
     {
-
+        nameToConnection.get(name).send(message);
     }
 
-    synchronized public void add_entity(Serializable newObject)
+    synchronized public void addEntityToContext(Serializable newObject)
     {
-
+        contextObjects.add(newObject);
     }
 }
