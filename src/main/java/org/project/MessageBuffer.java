@@ -41,6 +41,9 @@ class MessageBuffer
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
 
+        ///////////////////////////////////////////////////
+
+        incomingMessages.get(name).clear();
         return new ByteArrayInputStream(input);
     }
 }
