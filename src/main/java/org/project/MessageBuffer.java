@@ -1,10 +1,15 @@
 package org.project;
 
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 class MessageBuffer
 {
-    private Map<String, Queue<Message>> incomingMessages;  //class used as implementation: AbstractQueue
+    private Map<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
 
     /*
      *   MessageBuffer(List<String> names)
@@ -22,21 +27,20 @@ class MessageBuffer
 
     synchronized void addClient(String name)
     {
-        incomingMessages.put(name, new AbstractQueue<Message>());
+        incomingMessages.put(name, new ArrayList<>());
     }
 
-    synchronized void addMessage(String name, Message message)
+    synchronized void addMessage(String name, List<Byte> message)
     {
-        incomingMessages.get(name).add(message);
+        incomingMessages.get(name).addAll(message);
     }
 
-    synchronized Message popMessage(String name)
+    synchronized InputStream getInputStream(String name)
     {
-        return incomingMessages.get(name).remove();
-    }
+        byte[] input = new byte[incomingMessages.get(name).size()];
+        for(int i=0; i<incomingMessages.get(name).size(); i++)
+            input[i] = incomingMessages.get(name).get(i);
 
-    synchronized  Message peekMessage(String name)
-    {
-        return incomingMessages.get(name).peek();
+        return new ByteArrayInputStream(input);
     }
 }

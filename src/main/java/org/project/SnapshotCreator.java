@@ -1,6 +1,7 @@
 package org.project;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -57,14 +58,14 @@ public class SnapshotCreator
         return name;
     }
 
-    synchronized public Message readMessage(String name)
+    synchronized public InputStream getInputStream(String name)
     {
-        return messages.popMessage(name);
+        return messages.getInputStream(name);
     }
 
-    synchronized public void send(String name, Message message)
+    synchronized public void getOutputStream(String name) throws IOException
     {
-        nameToConnection.get(name).send(message);
+        nameToConnection.get(name).getOutputStream();
     }
 
     synchronized public void addEntityToContext(Serializable newObject)

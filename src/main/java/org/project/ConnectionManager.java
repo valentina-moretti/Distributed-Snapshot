@@ -1,6 +1,10 @@
 package org.project;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Thread class used as a listener to incoming messages for a specific socket passed to the constructor
@@ -21,16 +25,22 @@ class ConnectionManager extends Thread
     public void run()
     {
         while(!socket.isClosed())
-            receive();
+            try {
+                receive();
+            } catch (IOException e) { try{ socket.close(); } catch (IOException ignored){} }
     }
 
-    private void receive()
+    private void receive() throws IOException
     {
-        buffer.addMessage(name, /* ******************************* */);
+        List<Byte> readMessage = new ArrayList<>();
+        while (socket.getInputStream().available()!=0)
+            readMessage.add((byte) socket.getInputStream().read());
+
+        buffer.addMessage(name, readMessage);
     }
 
-    public synchronized void send(Message message)
+    public synchronized OutputStream getOutputStream() throws IOException
     {
-
+        return socket.getOutputStream();
     }
 }
