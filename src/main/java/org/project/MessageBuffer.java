@@ -32,10 +32,11 @@ class MessageBuffer
         incomingMessages.get(name).addAll(message);
     }
 
-    synchronized void retreiveMessage(String name)
+    public List<Byte> retreiveMessage(String name)
     {
         List<Byte> message = incomingMessages.get(name);
         incomingMessages.remove(name);
+        return message;
 
     }
 

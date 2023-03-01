@@ -74,7 +74,7 @@ public class SnapshotCreator
         contextObjects.add(newObject);
     }
 
-    synchronized public Message readMessage(String name){
+    synchronized public List<Byte> readMessage(String name){
         ConnectionManager connectionManager = nameToConnection.get(name);
         MessageBuffer messageBuffer = connectionManager.getBuffer();
         return messageBuffer.retreiveMessage(name);
