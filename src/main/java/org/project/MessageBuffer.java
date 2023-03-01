@@ -46,4 +46,5 @@ class MessageBuffer
         incomingMessages.get(name).clear();
         return new ByteArrayInputStream(input);
     }
+
 }

@@ -1,6 +1,7 @@
 package org.project;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -34,13 +35,24 @@ class ConnectionManager extends Thread
     {
         List<Byte> readMessage = new ArrayList<>();
         while (socket.getInputStream().available()!=0)
+
             readMessage.add((byte) socket.getInputStream().read());
 
         buffer.addMessage(name, readMessage);
+
+
+        //TODO: se ho letto lo snapshot o inizio un nuovo snapshot o se è già in corso
+        // mi segno che da quello mi è arrivato
+
     }
 
     public synchronized OutputStream getOutputStream() throws IOException
     {
         return socket.getOutputStream();
+    }
+
+    public synchronized InputStream getInputStream() throws IOException
+    {
+        return socket.getInputStream();
     }
 }
