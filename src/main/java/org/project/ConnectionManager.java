@@ -1,7 +1,10 @@
 package org.project;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Thread class used as a listener to incoming messages for a specific socket passed to the constructor
@@ -9,74 +12,35 @@ import java.net.Socket;
 class ConnectionManager extends Thread
 {
     private final Socket socket;
-    private BufferedReader in;
-    private BufferedWriter out;
-    private MessageBuffer messageBuffer;
+    private final MessageBuffer buffer;
+    private final String name;
 
-    ConnectionManager(MessageBuffer messageBuffer, Socket socket) throws IOException {
+    ConnectionManager(Socket socket, String name, MessageBuffer buffer)
+    {
         this.socket = socket;
-        this.messageBuffer = messageBuffer;
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        this.buffer = buffer;
+        this.name = name;
     }
-
-
     @Override
-    public void run(){
-        while(!socket.isClosed()) {
-            this.readFromBuffer();
-        }
+    public void run()
+    {
+        while(!socket.isClosed())
+            try {
+                receive();
+            } catch (IOException e) { try{ socket.close(); } catch (IOException ignored){} }
     }
 
-    private void readFromBuffer() {
+    private void receive() throws IOException
+    {
+        List<Byte> readMessage = new ArrayList<>();
+        while (socket.getInputStream().available()!=0)
+            readMessage.add((byte) socket.getInputStream().read());
 
-        String lastMessage = "";
-
-        try {
-            String line = in.readLine();
-            while (!("EOF").equals(line)) {
-                lastMessage = lastMessage + line + "\n";
-                line = in.readLine();
-            }
-        } catch (IOException e) {
-            if (!socket.isClosed()) {
-                try {
-                    socket.close();
-                } catch (IOException ex){
-                    ex.printStackTrace();
-                    System.out.println("SOCKET  ERROR");
-                }
-                return;
-            }
-        }
-
-        if(lastMessage==null){
-            return;
-        }
-
-        Message message = new Message(lastMessage);
-
-
+        buffer.addMessage(name, readMessage);
     }
 
-
-
-    synchronized public void send(Message message ) {
-        String stringToSend = toString(message);
-
-        //null only in tests
-        if (out == null) {
-            return;
-        }
-
-        try {
-            out.write(stringToSend);
-            out.flush();
-        } catch (IOException e) {
-                e.printStackTrace();
-        }
-            return;
+    public synchronized OutputStream getOutputStream() throws IOException
+    {
+        return socket.getOutputStream();
     }
-
-
 }

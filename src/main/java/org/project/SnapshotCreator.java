@@ -1,6 +1,8 @@
 package org.project;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -10,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public abstract class SnapshotCreator
+public class SnapshotCreator
 {
     static final int serverPort=55831;
     private List<Serializable> contextObjects;
@@ -36,36 +38,35 @@ public abstract class SnapshotCreator
 
     synchronized void connectionAccepted(Socket connection)
     {
-        ConnectionManager newConnectionM = new ConnectionManager(messages, connection);
-        connections.add(newConnectionM);
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+        connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
     }
 
     synchronized public String connect_to(InetAddress address) throws IOException
     {
-        Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(messages, socket);
-        connections.add(newConnectionM);
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
+        Socket socket = new Socket(address, serverPort);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+        connections.add(newConnectionM);
+
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
         return name;
     }
 
-    synchronized public Message readMessage(String name)
+    synchronized public InputStream getInputStream(String name)
     {
-        //popMessage
-        return messages.popMessage(name);
+        return messages.getInputStream(name);
     }
 
-    synchronized public void send(String name, Message message )
+    synchronized public OutputStream getOutputStream(String name) throws IOException
     {
-        ConnectionManager connectionManager= nameToConnection.get(name);
-        connectionManager.send(message);
+        return nameToConnection.get(name).getOutputStream();
     }
 
     synchronized public void addEntityToContext(Serializable newObject)
