@@ -2,10 +2,7 @@ package org.project;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 class MessageBuffer
 {
@@ -35,11 +32,22 @@ class MessageBuffer
         incomingMessages.get(name).addAll(message);
     }
 
+    public List<Byte> retreiveMessage(String name)
+    {
+        List<Byte> message = incomingMessages.get(name);
+        incomingMessages.remove(name);
+        return message;
+
+    }
+
+
     synchronized InputStream getInputStream(String name)
     {
+
         byte[] input = new byte[incomingMessages.get(name).size()];
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
+
 
         ///////////////////////////////////////////////////
 

@@ -55,4 +55,8 @@ class ConnectionManager extends Thread
     {
         return socket.getInputStream();
     }
+
+    public MessageBuffer getBuffer() {
+        return buffer;
+    }
 }

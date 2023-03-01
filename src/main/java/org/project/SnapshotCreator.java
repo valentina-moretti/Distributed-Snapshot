@@ -125,4 +125,10 @@ public class SnapshotCreator
     }
 
 
+
+    synchronized public List<Byte> readMessage(String name){
+        ConnectionManager connectionManager = nameToConnection.get(name);
+        MessageBuffer messageBuffer = connectionManager.getBuffer();
+        return messageBuffer.retreiveMessage(name);
+    }
 }
