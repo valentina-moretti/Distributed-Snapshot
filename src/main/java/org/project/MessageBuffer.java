@@ -32,7 +32,7 @@ class MessageBuffer
         incomingMessages.get(name).addAll(message);
     }
 
-    public List<Byte> retreiveMessage(String name)
+    public List<Byte> retrieveMessage(String name)
     {
         List<Byte> message = incomingMessages.get(name);
         incomingMessages.remove(name);

@@ -20,7 +20,7 @@ public class SnapshotCreator
     private ConnectionAccepter connectionAccepter;
     boolean snapshotting;
     Object snapshotLock;
-    private Map<String, MessageBuffer> savedMessages;
+    Map<String, List<Byte>> savedMessages;
 
     public SnapshotCreator(Serializable mainObject) throws IOException
     // there should be another parameter: the function to
@@ -41,7 +41,7 @@ public class SnapshotCreator
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages, this);
         connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
@@ -52,7 +52,7 @@ public class SnapshotCreator
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages, this);
         connections.add(newConnectionM);
 
         nameToConnection.put(name, newConnectionM);
@@ -129,6 +129,6 @@ public class SnapshotCreator
     synchronized public List<Byte> readMessage(String name){
         ConnectionManager connectionManager = nameToConnection.get(name);
         MessageBuffer messageBuffer = connectionManager.getBuffer();
-        return messageBuffer.retreiveMessage(name);
+        return messageBuffer.retrieveMessage(name);
     }
 }

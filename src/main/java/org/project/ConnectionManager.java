@@ -15,12 +15,15 @@ class ConnectionManager extends Thread
     private final Socket socket;
     private final MessageBuffer buffer;
     private final String name;
+    private final SnapshotCreator s;
 
-    ConnectionManager(Socket socket, String name, MessageBuffer buffer)
+
+    ConnectionManager(Socket socket, String name, MessageBuffer buffer, SnapshotCreator s)
     {
         this.socket = socket;
         this.buffer = buffer;
         this.name = name;
+        this.s = s;
     }
     @Override
     public void run()
@@ -31,6 +34,7 @@ class ConnectionManager extends Thread
             } catch (IOException e) { try{ socket.close(); } catch (IOException ignored){} }
     }
 
+
     private void receive() throws IOException
     {
         List<Byte> readMessage = new ArrayList<>();
@@ -40,9 +44,23 @@ class ConnectionManager extends Thread
 
         buffer.addMessage(name, readMessage);
 
-
         //TODO: se ho letto lo snapshot o inizio un nuovo snapshot o se è già in corso
         // mi segno che da quello mi è arrivato
+
+        if(0/*leggo snapshot*/){
+
+            synchronized (s.snapshotLock) {
+                if (!s.snapshotting) {
+                    s.SnapshotStarted();
+
+                } else {
+                    //salvo il messaggio
+                    s.savedMessages.put(name, readMessage);
+                }
+            }
+        }
+
+
 
     }
 
