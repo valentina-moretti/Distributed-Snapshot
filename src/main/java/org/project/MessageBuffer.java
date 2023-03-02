@@ -56,6 +56,7 @@ class MessageBuffer
         //todo
         incomingMessages.get(name).clear(); //MA COSI PULISCI SOLO LA PRIMA VOLTA CHE UNO RICHIEDE L'INPUT STREAM
         //DOVRESTI PULIRE OGNI VOLTA CHE UNO LEGGE IL MESSAGGIO
+        //COME DISTINGUO UN MESSAGGIO DA UN ALTRO?
         return new ByteArrayInputStream(input);
     }
 

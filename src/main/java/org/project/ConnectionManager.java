@@ -16,6 +16,7 @@ class ConnectionManager extends Thread
     private final MessageBuffer buffer;
     private final String name;
     private final SnapshotCreator s;
+    private boolean snapshotting = false;
 
 
 
@@ -48,30 +49,33 @@ class ConnectionManager extends Thread
 
         buffer.addMessage(name, readMessage);
 
-        //TODO: se ho letto lo snapshot o inizio un nuovo snapshot o se è già in corso
-        // mi segno che da quello mi è arrivato
-
-        //TODO: save state
+        if(this.snapshotting) {
+            s.savedMessages.put(name, readMessage);
+        }
 
         if(newMessage.equals(255)/*leggo snapshot*/){
 
             synchronized (s.snapshotLock) {
-                if (!s.snapshotting) {
+                if (!this.snapshotting) {
                     // already called by the one who has started the snapshot
                     s.SnapshotStarted();
-                    s.SaveState(name);
-                } else {
+                    // TODO: ?
+                }
+                //smetto di salvare i messaggi su questo canale
+                this.snapshotting=false;
+
+                    /*
                     //salvo il messaggio
-                    if(!s.getChannelClosed(name).contains(/*socket da cui lo ha ricevuto*/)) {
-                        s.savedMessages.put(name, readMessage);
-                        s.setChannelClosed(name,/*socket da cui lo ha ricevuto*/ );
-                    }
+                    if(!s.getChannelClosed(name).contains(/*socket da cui lo ha ricevuto)){*/
+                    //s.savedMessages.put(name, readMessage);
+                    //s.setChannelClosed(name,/*socket da cui lo ha ricevuto*/ );
                 }
             }
         }
 
 
-
+    public void SetSnapshotting(){
+        this.snapshotting=true;
     }
 
     public synchronized OutputStream getOutputStream() throws IOException
@@ -86,5 +90,9 @@ class ConnectionManager extends Thread
 
     public MessageBuffer getBuffer() {
         return buffer;
+    }
+
+    public boolean isSnapshotting() {
+        return snapshotting;
     }
 }

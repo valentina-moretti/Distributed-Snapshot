@@ -21,7 +21,7 @@ public class SnapshotCreator
     boolean snapshotting;
     Object snapshotLock;
     Map<String, List<Byte>> savedMessages;
-    Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
+    //Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
 
     public SnapshotCreator(Serializable mainObject) throws IOException
     // there should be another parameter: the function to
@@ -87,6 +87,7 @@ public class SnapshotCreator
             }
             snapshotting = true;
             SnapshotStarted();
+            SaveState();
 
         }
     }
@@ -98,6 +99,7 @@ public class SnapshotCreator
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter( connection.getOutputStream() ));
                 out.write((byte) 255);
                 BufferedReader in = new BufferedReader(new InputStreamReader( connection.getInputStream() ));
+                connection.SetSnapshotting();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -105,10 +107,17 @@ public class SnapshotCreator
         //send snapshot messages to everybody
 
         //listen to
+        //todo: non è già fatto da run in connectionManager?
     }
 
     synchronized void Listen(){
 
+    }
+
+    synchronized void SetSnapshotting(){
+        for (ConnectionManager c:connections) {
+            c.SetSnapshotting();
+        }
     }
 
     synchronized void StopSnapshot(){
@@ -125,10 +134,11 @@ public class SnapshotCreator
         }
     }
 
-    public void SaveState(String name){
-
+    public void SaveState(){
+        //TODO: save state
     }
 
+    /*
     public List<String> getChannelClosed(String name) {
         return channelClosed.get(name);
     }
@@ -136,6 +146,9 @@ public class SnapshotCreator
     public void setChannelClosed(String who, String whichChannel) {
         this.channelClosed.get(who).add(whichChannel);
     }
+    */
+
+
 
     /*
     synchronized public List<Byte> readMessage(String name){
