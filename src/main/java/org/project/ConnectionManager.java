@@ -18,6 +18,7 @@ class ConnectionManager extends Thread
     private final SnapshotCreator s;
 
 
+
     ConnectionManager(Socket socket, String name, MessageBuffer buffer, SnapshotCreator s)
     {
         this.socket = socket;
@@ -38,24 +39,33 @@ class ConnectionManager extends Thread
     private void receive() throws IOException
     {
         List<Byte> readMessage = new ArrayList<>();
-        while (socket.getInputStream().available()!=0)
-
-            readMessage.add((byte) socket.getInputStream().read());
+        List<Byte> newMessage= null;
+        while (socket.getInputStream().available()!=0) {
+            byte newByte = (byte)socket.getInputStream().read();
+            readMessage.add(newByte);
+            newMessage.add((Byte) newByte);
+        }
 
         buffer.addMessage(name, readMessage);
 
         //TODO: se ho letto lo snapshot o inizio un nuovo snapshot o se è già in corso
         // mi segno che da quello mi è arrivato
 
-        if(0/*leggo snapshot*/){
+        //TODO: save state
+
+        if(newMessage.equals(255)/*leggo snapshot*/){
 
             synchronized (s.snapshotLock) {
                 if (!s.snapshotting) {
+                    // already called by the one who has started the snapshot
                     s.SnapshotStarted();
-
+                    s.SaveState(name);
                 } else {
                     //salvo il messaggio
-                    s.savedMessages.put(name, readMessage);
+                    if(!s.getChannelClosed(name).contains(/*socket da cui lo ha ricevuto*/)) {
+                        s.savedMessages.put(name, readMessage);
+                        s.setChannelClosed(name,/*socket da cui lo ha ricevuto*/ );
+                    }
                 }
             }
         }

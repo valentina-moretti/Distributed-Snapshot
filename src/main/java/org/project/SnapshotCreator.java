@@ -21,6 +21,7 @@ public class SnapshotCreator
     boolean snapshotting;
     Object snapshotLock;
     Map<String, List<Byte>> savedMessages;
+    Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
 
     public SnapshotCreator(Serializable mainObject) throws IOException
     // there should be another parameter: the function to
@@ -124,11 +125,23 @@ public class SnapshotCreator
         }
     }
 
+    public void SaveState(String name){
 
+    }
 
+    public List<String> getChannelClosed(String name) {
+        return channelClosed.get(name);
+    }
+
+    public void setChannelClosed(String who, String whichChannel) {
+        this.channelClosed.get(who).add(whichChannel);
+    }
+
+    /*
     synchronized public List<Byte> readMessage(String name){
         ConnectionManager connectionManager = nameToConnection.get(name);
         MessageBuffer messageBuffer = connectionManager.getBuffer();
         return messageBuffer.retrieveMessage(name);
     }
+    */
 }

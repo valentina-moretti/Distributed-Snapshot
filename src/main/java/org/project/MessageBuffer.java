@@ -32,6 +32,7 @@ class MessageBuffer
         incomingMessages.get(name).addAll(message);
     }
 
+    /*
     public List<Byte> retrieveMessage(String name)
     {
         List<Byte> message = incomingMessages.get(name);
@@ -39,6 +40,7 @@ class MessageBuffer
         return message;
 
     }
+    */
 
 
     synchronized InputStream getInputStream(String name)
@@ -51,7 +53,9 @@ class MessageBuffer
 
         ///////////////////////////////////////////////////
 
-        incomingMessages.get(name).clear();
+        //todo
+        incomingMessages.get(name).clear(); //MA COSI PULISCI SOLO LA PRIMA VOLTA CHE UNO RICHIEDE L'INPUT STREAM
+        //DOVRESTI PULIRE OGNI VOLTA CHE UNO LEGGE IL MESSAGGIO
         return new ByteArrayInputStream(input);
     }
 
