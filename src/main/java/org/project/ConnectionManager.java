@@ -57,13 +57,11 @@ class ConnectionManager extends Thread
 
             synchronized (s.snapshotLock) {
                 if (!this.snapshotting) {
-                    // StartSnapshot already called by another one
+                    // already called by the one who has started the snapshot
                     s.SnapshotStarted();
                 }
                 //smetto di salvare i messaggi su questo canale
-                else {
-                    this.snapshotting=false;
-                }
+                this.snapshotting=false;;
                 }
             }
         }
