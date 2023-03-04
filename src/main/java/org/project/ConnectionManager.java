@@ -59,16 +59,9 @@ class ConnectionManager extends Thread
                 if (!this.snapshotting) {
                     // already called by the one who has started the snapshot
                     s.SnapshotStarted();
-                    // TODO: ?
                 }
                 //smetto di salvare i messaggi su questo canale
-                this.snapshotting=false;
-
-                    /*
-                    //salvo il messaggio
-                    if(!s.getChannelClosed(name).contains(/*socket da cui lo ha ricevuto)){*/
-                    //s.savedMessages.put(name, readMessage);
-                    //s.setChannelClosed(name,/*socket da cui lo ha ricevuto*/ );
+                this.snapshotting=false;;
                 }
             }
         }
