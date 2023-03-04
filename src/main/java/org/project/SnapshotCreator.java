@@ -110,10 +110,6 @@ public class SnapshotCreator
         //todo: non è già fatto da run in connectionManager?
     }
 
-    synchronized void Listen(){
-
-    }
-
     synchronized void SetSnapshotting(){
         for (ConnectionManager c:connections) {
             c.SetSnapshotting();
