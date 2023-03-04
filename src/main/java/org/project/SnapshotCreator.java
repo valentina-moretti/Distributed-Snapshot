@@ -156,6 +156,37 @@ public class SnapshotCreator implements Serializable
         }
     }
 
+    public void Deserialization(String filename){
+        SnapshotCreator object = null;
+
+        // Deserialization
+        try {
+
+            // Reading the object from a file
+            FileInputStream file = new FileInputStream
+                    (filename);
+            ObjectInputStream in = new ObjectInputStream
+                    (file);
+
+            // Method for deserialization of object
+            object = (SnapshotCreator)in.readObject();
+
+            in.close();
+            file.close();
+            System.out.println("Object has been deserialized\n"
+                    + "Data after Deserialization.");
+        }
+
+        catch (IOException ex) {
+            System.out.println("IOException is caught");
+        }
+
+        catch (ClassNotFoundException ex) {
+            System.out.println("ClassNotFoundException" +
+                    " is caught");
+        }
+    }
+
     /*
     public List<String> getChannelClosed(String name) {
         return channelClosed.get(name);
