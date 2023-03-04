@@ -61,7 +61,7 @@ class ConnectionManager extends Thread
                     s.SnapshotStarted();
                 }
                 //smetto di salvare i messaggi su questo canale
-                this.snapshotting=false;;
+                this.snapshotting=false;
                 }
             }
         }
