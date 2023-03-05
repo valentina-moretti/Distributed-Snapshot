@@ -10,4 +10,8 @@ public class Farm {
         animalList = new ArrayList<>();
     }
 
+    public void addAnimal(Animal animal) {
+        this.animalList.add(animal);
+    }
+
 }
