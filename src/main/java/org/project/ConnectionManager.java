@@ -44,7 +44,7 @@ class ConnectionManager extends Thread
         while (socket.getInputStream().available()!=0) {
             byte newByte = (byte)socket.getInputStream().read();
             readMessage.add(newByte);
-            newMessage.add((Byte) newByte);
+            newMessage.add(newByte);
         }
 
         buffer.addMessage(name, readMessage);

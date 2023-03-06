@@ -32,17 +32,6 @@ class MessageBuffer
         incomingMessages.get(name).addAll(message);
     }
 
-    /*
-    public List<Byte> retrieveMessage(String name)
-    {
-        List<Byte> message = incomingMessages.get(name);
-        incomingMessages.remove(name);
-        return message;
-
-    }
-    */
-
-
     synchronized InputStream getInputStream(String name)
     {
 

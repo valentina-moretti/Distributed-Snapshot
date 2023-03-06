@@ -18,8 +18,7 @@ public class SnapshotCreator implements Serializable
     private int numOfConnections;
     private List<ConnectionManager> connections;
     private ConnectionAccepter connectionAccepter;
-    boolean snapshotting;
-    Object snapshotLock;
+    private boolean snapshotting;
     Map<String, List<Byte>> savedMessages;
     //Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
 
@@ -63,7 +62,7 @@ public class SnapshotCreator implements Serializable
 
     synchronized public InputStream getInputStream(String name)
     {
-        return messages.getInputStream(name);
+        return new MyInputStream(messages, name);
     }
 
     synchronized public OutputStream getOutputStream(String name) throws IOException
@@ -126,6 +125,11 @@ public class SnapshotCreator implements Serializable
             snapshotting = false;
 
         }
+    }
+
+    boolean isSnapshotting()
+    {
+        return snapshotting;
     }
 
     public void SaveState(){
