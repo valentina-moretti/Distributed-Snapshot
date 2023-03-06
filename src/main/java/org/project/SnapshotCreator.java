@@ -22,19 +22,31 @@ public class SnapshotCreator implements Serializable
     Map<String, List<Byte>> savedMessages;
     //Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
 
+    //todo: news da Valentina
     public SnapshotCreator(Serializable mainObject) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        contextObjects = new ArrayList<>();
-        contextObjects.add(mainObject);
-        messages = new MessageBuffer(this);
-        nameToConnection = new HashMap<>();
-        connections = new ArrayList<>();
-        connectionAccepter = new ConnectionAccepter(this);
-        numOfConnections = 0;
-        connectionAccepter.start();
-        snapshotting = false;
+        File file=new File("savedState.txt");
+        //if the file do not exist: is the first time I'm creating it
+        if(file.length()==0)
+        {
+            contextObjects = new ArrayList<>();
+            contextObjects.add(mainObject);
+            messages = new MessageBuffer(this);
+            nameToConnection = new HashMap<>();
+            connections = new ArrayList<>();
+            connectionAccepter = new ConnectionAccepter(this);
+            numOfConnections = 0;
+            connectionAccepter.start();
+            snapshotting = false;
+        }
+        else
+        {
+            //I'm recovering
+            SnapshotCreator snapshotCreator_recovered = deserialization();
+            snapshotCreator_recovered.connectionAccepter.start();
+        }
     }
 
     synchronized void connectionAccepted(Socket connection)
@@ -170,7 +182,7 @@ public class SnapshotCreator implements Serializable
         }
     }
 
-    public void deserialization(String filename){
+    public SnapshotCreator deserialization(){
         SnapshotCreator object = null;
 
         // Deserialization
@@ -178,7 +190,7 @@ public class SnapshotCreator implements Serializable
 
             // Reading the object from a file
             FileInputStream file = new FileInputStream
-                    (filename);
+                    ("savedState.txt");
             ObjectInputStream in = new ObjectInputStream
                     (file);
 
@@ -199,5 +211,6 @@ public class SnapshotCreator implements Serializable
             System.out.println("ClassNotFoundException" +
                     " is caught");
         }
+        return object;
     }
 }
