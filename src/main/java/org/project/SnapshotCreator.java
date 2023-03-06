@@ -28,7 +28,7 @@ public class SnapshotCreator implements Serializable
     {
         contextObjects = new ArrayList<>();
         contextObjects.add(mainObject);
-        messages = new MessageBuffer();
+        messages = new MessageBuffer(this);
         nameToConnection = new HashMap<>();
         connections = new ArrayList<>();
         connectionAccepter = new ConnectionAccepter(this);
@@ -41,7 +41,7 @@ public class SnapshotCreator implements Serializable
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
@@ -52,7 +52,7 @@ public class SnapshotCreator implements Serializable
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
 
         nameToConnection.put(name, newConnectionM);
@@ -75,7 +75,7 @@ public class SnapshotCreator implements Serializable
         contextObjects.add(newObject);
     }
 
-    synchronized public void StartSnapshot(){
+    synchronized public void startSnapshot(){
         synchronized (snapshotLock){
             while(snapshotting){
                 try {
@@ -85,13 +85,13 @@ public class SnapshotCreator implements Serializable
                 }
             }
             snapshotting = true;
-            SnapshotStarted();
-            SaveState();
+            snapshotStarted();
+            saveState();
 
         }
     }
 
-    synchronized void SnapshotStarted(){
+    synchronized void snapshotStarted(){
         for (ConnectionManager connection :
                 connections) {
             try {
@@ -107,13 +107,13 @@ public class SnapshotCreator implements Serializable
 
     }
 
-    synchronized void SetSnapshotting(){
+    synchronized void setSnapshotting(){
         for (ConnectionManager c:connections) {
             c.SetSnapshotting();
         }
     }
 
-    synchronized void StopSnapshot(){
+    synchronized void stopSnapshot(){
         synchronized (snapshotLock){
             while(snapshotting){
                 try {
@@ -132,7 +132,17 @@ public class SnapshotCreator implements Serializable
         return snapshotting;
     }
 
-    public void SaveState(){
+
+
+
+
+
+
+
+
+
+
+    public void saveState(){
         String filename = "savedState.txt";
 
         // Serialization
@@ -160,7 +170,7 @@ public class SnapshotCreator implements Serializable
         }
     }
 
-    public void Deserialization(String filename){
+    public void deserialization(String filename){
         SnapshotCreator object = null;
 
         // Deserialization
@@ -190,24 +200,4 @@ public class SnapshotCreator implements Serializable
                     " is caught");
         }
     }
-
-    /*
-    public List<String> getChannelClosed(String name) {
-        return channelClosed.get(name);
-    }
-
-    public void setChannelClosed(String who, String whichChannel) {
-        this.channelClosed.get(who).add(whichChannel);
-    }
-    */
-
-
-
-    /*
-    synchronized public List<Byte> readMessage(String name){
-        ConnectionManager connectionManager = nameToConnection.get(name);
-        MessageBuffer messageBuffer = connectionManager.getBuffer();
-        return messageBuffer.retrieveMessage(name);
-    }
-    */
 }
