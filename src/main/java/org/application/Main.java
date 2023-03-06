@@ -9,7 +9,15 @@ import java.io.Serializable;
 public class Main {
 
     public static void main(String[] args){
-        Controller controller= new Controller();
+        Controller controller = controller.getInstance();
+        int serverPort;
+        if (args.length == 0) {
+            serverPort = 35002;
+        } else {
+            serverPort = Integer.parseInt(args[0]);
+        }
+        controller.start(serverPort);
+
         try {
             SnapshotCreator snapshotCreator = new SnapshotCreator((Serializable) controller);
         } catch (IOException e) {

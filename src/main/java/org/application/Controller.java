@@ -6,15 +6,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Controller implements Runnable{
-    private List<Socket> connectionsList;
-    private List<Serializable> serializableList;
-
-    public Controller(){
-        connectionsList= new ArrayList<>();
-        serializableList= new ArrayList<>();
+    //todo: valentina chiede: ci sta il singleton?
+    private static Controller instance;
+    public static Controller getInstance(){
+        if (instance == null){
+            instance = new Controller();
+        }
+        return instance;
     }
-
-    public void start_application(){
+    private Controller(){
+        instance=null;
+    }
+    @Override
+    public void run(){
         Farm farm = new Farm(this);
         Animal a = new Animal(this);
         farm.addAnimal(a, this);
@@ -24,16 +28,8 @@ public class Controller implements Runnable{
         b.addEnemy(a);
     }
 
-    public void addSerializable(Serializable serializable){
-        serializableList.add(serializable);
-    }
 
-    public List<Serializable> getSerializableList() {
-        return serializableList;
-    }
 
-    @Override
-    public void run() {
 
-    }
+
 }
