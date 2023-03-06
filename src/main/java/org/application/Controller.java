@@ -5,12 +5,13 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Controller {
+public class Controller implements Runnable{
     private List<Socket> connectionsList;
     private List<Serializable> serializableList;
 
     public Controller(){
         connectionsList= new ArrayList<>();
+        serializableList= new ArrayList<>();
     }
 
     public void start_application(){
@@ -29,5 +30,10 @@ public class Controller {
 
     public List<Serializable> getSerializableList() {
         return serializableList;
+    }
+
+    @Override
+    public void run() {
+
     }
 }
