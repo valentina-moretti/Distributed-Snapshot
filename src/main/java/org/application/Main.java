@@ -9,21 +9,15 @@ import java.io.Serializable;
 public class Main {
 
     public static void main(String[] args){
-        Farm farm = new Farm();
-        Animal a = new Animal();
-        SnapshotCreator snapshotCreator = null;
+        Controller controller= new Controller();
         try {
-            snapshotCreator = new SnapshotCreator((Serializable) a);
+            SnapshotCreator snapshotCreator = new SnapshotCreator((Serializable) controller);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        farm.addAnimal(a);
-        Animal b = new Animal();
-        farm.addAnimal(b);
-        a.addFriend(b);
-        b.addEnemy(a);
-
-
+        controller.start_application();
+        Recovery recovery= new Recovery();
+        recovery.recover(controller);
     }
 
 
