@@ -28,7 +28,7 @@ public class SnapshotCreator implements Serializable
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        File file=new File("saving_file.txt");
+        File file=new File("savedState.txt");
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0){
             contextObjects = new ArrayList<>();
@@ -177,7 +177,7 @@ public class SnapshotCreator implements Serializable
 
             // Reading the object from a file
             FileInputStream file = new FileInputStream
-                    ("saving_file.txt");
+                    ("savedState.txt");
             ObjectInputStream in = new ObjectInputStream
                     (file);
 
