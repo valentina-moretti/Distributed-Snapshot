@@ -41,7 +41,7 @@ class ConnectionManager extends Thread
         buffer.addMessage(name, readMessage);
     }
 
-    public synchronized OutputStream getOutputStream() throws IOException
+    synchronized OutputStream getOutputStream() throws IOException
     {
         return socket.getOutputStream();
     }

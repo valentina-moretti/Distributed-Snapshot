@@ -1,8 +1,6 @@
 package org.project;
 
 import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
-import org.application.Controller;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -17,15 +15,16 @@ public class SnapshotCreator
 {
     static final int serverPort=55831;
     //todo:non usiamo piu i serializable
-    private List<Serializable> contextObjects; //
+    private List<Serializable> contextObjects;
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
     private int numOfConnections;
-    private List<ConnectionManager> connections; //
+    private List<ConnectionManager> connections;
     private ConnectionAccepter connectionAccepter;
     private JsonConverter jsonConverter;
     private boolean snapshotting;
-    Map<String, List<Byte>> savedMessages;
+    private Map<String, Boolean> snapshotArrivedFrom;
+    private Map<String, List<Byte>> savedMessages;
 
     //todo: news da Valentina
     public SnapshotCreator(Serializable mainObject) throws IOException
@@ -45,6 +44,8 @@ public class SnapshotCreator
             numOfConnections = 0;
             connectionAccepter.start();
             snapshotting = false;
+            snapshotArrivedFrom = new HashMap<>();
+            savedMessages = new HashMap<>();
             jsonConverter= new JsonConverter();
         }
         else
@@ -61,13 +62,13 @@ public class SnapshotCreator
     }
 
 
-
     synchronized void connectionAccepted(Socket connection)
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
+        messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
     }
@@ -79,15 +80,15 @@ public class SnapshotCreator
         Socket socket = new Socket(address, serverPort);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
-
+        messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
         return name;
     }
 
-    synchronized public InputStream getInputStream(String name)
+    synchronized public InputStream getInputStream(String connectionName)
     {
-        return new MyInputStream(messages, name);
+        return new MyInputStream(messages, connectionName);
     }
 
     synchronized public OutputStream getOutputStream(String name) throws IOException
@@ -100,54 +101,40 @@ public class SnapshotCreator
         contextObjects.add(newObject);
     }
 
-    synchronized public void startSnapshot(){
-        synchronized (snapshotLock){
-            while(snapshotting){
-                try {
-                    snapshotLock.wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            snapshotting = true;
-            snapshotStarted();
-            saveState();
+    synchronized void startSnapshot()
+    {
+        saveState();
+        savedMessages.clear();
+        snapshotArrivedFrom.clear();
+        for(String connectionName : nameToConnection.keySet())
+            snapshotArrivedFrom.put(connectionName, false);
+        snapshotting = true;
 
-        }
+        //TODO: send snapshot to everybody
     }
 
-    //todo: errori: non sono cose che ha connection
-    synchronized void snapshotStarted(){
-        for (ConnectionManager connection :
-                connections) {
-            try {
-                BufferedWriter out = new BufferedWriter(new OutputStreamWriter( connection.getOutputStream() ));
-                out.write((byte) 255);
-                BufferedReader in = new BufferedReader(new InputStreamReader( connection.getInputStream() ));
-                connection.setSnapshotting();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        //send snapshot messages to everybody
-
+    synchronized void snapshotMessageArrived(String connectionName)
+    {
+        snapshotArrivedFrom.replace(connectionName, true);
+        boolean snapshotEndedFlag = false;
+        for(Boolean arrived : snapshotArrivedFrom.values())
+            snapshotEndedFlag = snapshotting && arrived;
+        if(snapshotEndedFlag)
+            stopSnapshot();
     }
 
-    synchronized void stopSnapshot(){
-        synchronized (snapshotLock){
-            while(snapshotting){
-                try {
-                    snapshotLock.wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            snapshotting = false;
-
-        }
+    synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
+    {
+        savedMessages.get(connectionName).addAll(message);
     }
 
-    boolean isSnapshotting()
+    synchronized private void stopSnapshot()
+    {
+        snapshotting = false;
+        //TODO: salvo tutti i messaggi e lo stato nello stesso file
+    }
+
+    synchronized boolean isSnapshotting()
     {
         return snapshotting;
     }

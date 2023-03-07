@@ -23,4 +23,22 @@ class MyInputStream extends InputStream
             inputStream = messageBuffer.getInputStream(name);
         return inputStream.read();
     }
+
+    @Override
+    public boolean markSupported()
+    {
+        return false;
+    }
+
+    @Override
+    public void mark(int readLimit)
+    {
+        return;
+    }
+
+    @Override
+    public void reset() throws IOException
+    {
+        return;
+    }
 }

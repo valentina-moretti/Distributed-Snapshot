@@ -40,6 +40,7 @@ class MessageBuffer
             {
                 //TODO: salvo i messaggi arrivati fino al messaggio di snapshot e segnalo che da questa
                 // connessione è arrivato il messaggio di snapshot
+                snapshotManager.snapshotMessageArrived(name);
             }
             else
             {
