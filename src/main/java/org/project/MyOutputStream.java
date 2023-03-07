@@ -17,7 +17,7 @@ class MyOutputStream extends OutputStream
     @Override
     synchronized public void write(byte[] b) throws IOException
     {
-        while (snapshotManager.IsSnapshotting())
+        while (snapshotManager.isSnapshotting())
         {
             try {
                 wait();
@@ -31,7 +31,7 @@ class MyOutputStream extends OutputStream
     @Override
     synchronized public void write(byte[] b, int off, int len) throws IOException
     {
-        while (snapshotManager.IsSnapshotting())
+        while (snapshotManager.isSnapshotting())
         {
             try {
                 wait();
@@ -45,7 +45,7 @@ class MyOutputStream extends OutputStream
     @Override
     synchronized public void write(int b) throws IOException
     {
-        while (snapshotManager.IsSnapshotting())
+        while (snapshotManager.isSnapshotting())
         {
             try {
                 wait();

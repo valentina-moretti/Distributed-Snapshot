@@ -24,10 +24,8 @@ public class SnapshotCreator
     private List<ConnectionManager> connections; //
     private ConnectionAccepter connectionAccepter;
     private JsonConverter jsonConverter;
-    boolean snapshotting;
-    Object snapshotLock;
-    Map<String, List<Byte>> savedMessages; //
-    //Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
+    private boolean snapshotting;
+    Map<String, List<Byte>> savedMessages;
 
     //todo: news da Valentina
     public SnapshotCreator(Serializable mainObject) throws IOException
@@ -52,7 +50,7 @@ public class SnapshotCreator
         else
         {
             //I'm recovering
-            SnapshotCreator snapshotCreator_recovered = SnapshotDeserialization();
+            SnapshotCreator snapshotCreator_recovered = snapshotDeserialization();
             snapshotCreator_recovered.connectionAccepter.start();
             this.connections = snapshotCreator_recovered.connections;
             this.savedMessages = snapshotCreator_recovered.savedMessages;
@@ -68,7 +66,7 @@ public class SnapshotCreator
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
@@ -79,7 +77,7 @@ public class SnapshotCreator
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
 
         nameToConnection.put(name, newConnectionM);
@@ -112,21 +110,21 @@ public class SnapshotCreator
                 }
             }
             snapshotting = true;
-            SnapshotStarted();
-            SaveState();
+            snapshotStarted();
+            saveState();
 
         }
     }
 
     //todo: errori: non sono cose che ha connection
-    synchronized void SnapshotStarted(){
+    synchronized void snapshotStarted(){
         for (ConnectionManager connection :
                 connections) {
             try {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter( connection.getOutputStream() ));
                 out.write((byte) 255);
                 BufferedReader in = new BufferedReader(new InputStreamReader( connection.getInputStream() ));
-                connection.SetSnapshotting();
+                connection.setSnapshotting();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -134,18 +132,6 @@ public class SnapshotCreator
         //send snapshot messages to everybody
 
     }
-
-    //todo: solo per snapshot creator ( non per ogni connection manager)
-    synchronized void SetSnapshotting(){
-        snapshotting=true;
-    }
-    
-    //todo: solo per snapshot creator ( non per ogni connection manager)
-    synchronized boolean IsSnapshotting(){
-        return snapshotting;
-    }
-    
-    
 
     synchronized void stopSnapshot(){
         synchronized (snapshotLock){
@@ -161,7 +147,21 @@ public class SnapshotCreator
         }
     }
 
-    public void SaveState(){
+    boolean isSnapshotting()
+    {
+        return snapshotting;
+    }
+
+
+
+
+
+
+
+
+
+
+    public void saveState(){
         String filename = "SnapCreator.txt";
         String saveObjects = "Objects.txt";
 
@@ -188,7 +188,7 @@ public class SnapshotCreator
         }
     }
 
-    public SnapshotCreator SnapshotDeserialization(){
+    public SnapshotCreator snapshotDeserialization(){
         SnapshotCreator sc = null;
 
         // Deserialization
@@ -202,6 +202,8 @@ public class SnapshotCreator
         return sc;
     }
 
+    // TODO: questi metodi non dovrebbbero esserci
+    /*
     public List<ConnectionManager> getConnections() {
         return connections;
     }
