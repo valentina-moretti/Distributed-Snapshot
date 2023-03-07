@@ -1,5 +1,8 @@
 package org.project;
 
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -28,7 +31,7 @@ public class SnapshotCreator implements Serializable
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        File file=new File("savedState.txt");
+        File file=new File("SnapCreator.txt");
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0){
             contextObjects = new ArrayList<>();
@@ -43,8 +46,12 @@ public class SnapshotCreator implements Serializable
         }
         else{
             //I'm recovering
-            SnapshotCreator snapshotCreator_recovered = Deserialization();
+            SnapshotCreator snapshotCreator_recovered = SnapshotDeserialization();
             snapshotCreator_recovered.connectionAccepter.start();
+            this.connections = snapshotCreator_recovered.connections;
+            this.savedMessages = snapshotCreator_recovered.savedMessages;
+            this.nameToConnection = snapshotCreator_recovered.nameToConnection;
+
         }
 
     }
@@ -142,25 +149,23 @@ public class SnapshotCreator implements Serializable
     }
 
     public void SaveState(){
-        String filename = "savedState.txt";
+        String filename = "SnapCreator.txt";
+        String saveObjects = "Objects.txt";
+
+        Gson gson = new Gson();
 
         // Serialization
         try {
 
-            // Saving of object in a file
-            FileOutputStream file = new FileOutputStream
-                    (filename);
-            ObjectOutputStream out = new ObjectOutputStream
-                    (file);
+            // Saving of SnapCreator in a file
+            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.txt"));
 
             // Method for serialization of object
-            out.writeObject(this);
+            out.write(gson.toJson(this));
 
             out.close();
-            file.close();
 
-            System.out.println("Object has been serialized\n"
-                    + "Data before Deserialization.");
+            System.out.println("Object has been serialized\n");
 
         }
 
@@ -169,36 +174,31 @@ public class SnapshotCreator implements Serializable
         }
     }
 
-    public SnapshotCreator Deserialization(){
-        SnapshotCreator object = null;
+    public SnapshotCreator SnapshotDeserialization(){
+        SnapshotCreator sc = null;
 
         // Deserialization
         try {
 
             // Reading the object from a file
-            FileInputStream file = new FileInputStream
-                    ("savedState.txt");
-            ObjectInputStream in = new ObjectInputStream
-                    (file);
+            JsonReader reader = new JsonReader(new FileReader("SnapCreator.txt"));
+
+            Gson gson = new Gson();
 
             // Method for deserialization of object
-            object = (SnapshotCreator)in.readObject();
+            sc = gson.fromJson(reader, SnapshotCreator.class);
 
-            in.close();
-            file.close();
-            System.out.println("Object has been deserialized\n"
-                    + "Data after Deserialization.");
+            reader.close();
+            System.out.println("Object has been deserialized\n");
+
+
         }
 
         catch (IOException ex) {
             System.out.println("IOException is caught");
         }
 
-        catch (ClassNotFoundException ex) {
-            System.out.println("ClassNotFoundException" +
-                    " is caught");
-        }
-        return object;
+        return sc;
     }
 
 
