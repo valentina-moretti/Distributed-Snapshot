@@ -33,10 +33,11 @@ public class SnapshotCreator implements Serializable
     {
         File file=new File("SnapCreator.txt");
         //if the file do not exist: is the first time I'm creating it
-        if(file.length()==0){
+        if(file.length()==0)
+        {
             contextObjects = new ArrayList<>();
             contextObjects.add(mainObject);
-            messages = new MessageBuffer();
+            messages = new MessageBuffer(this);
             nameToConnection = new HashMap<>();
             connections = new ArrayList<>();
             connectionAccepter = new ConnectionAccepter(this);
@@ -44,7 +45,8 @@ public class SnapshotCreator implements Serializable
             connectionAccepter.start();
             snapshotting = false;
         }
-        else{
+        else
+        {
             //I'm recovering
             SnapshotCreator snapshotCreator_recovered = SnapshotDeserialization();
             snapshotCreator_recovered.connectionAccepter.start();
@@ -62,7 +64,7 @@ public class SnapshotCreator implements Serializable
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
@@ -73,7 +75,7 @@ public class SnapshotCreator implements Serializable
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
 
         nameToConnection.put(name, newConnectionM);
@@ -83,7 +85,7 @@ public class SnapshotCreator implements Serializable
 
     synchronized public InputStream getInputStream(String name)
     {
-        return messages.getInputStream(name);
+        return new MyInputStream(messages, name);
     }
 
     synchronized public OutputStream getOutputStream(String name) throws IOException
@@ -96,7 +98,7 @@ public class SnapshotCreator implements Serializable
         contextObjects.add(newObject);
     }
 
-    synchronized public void StartSnapshot(){
+    synchronized public void startSnapshot(){
         synchronized (snapshotLock){
             while(snapshotting){
                 try {
@@ -106,13 +108,13 @@ public class SnapshotCreator implements Serializable
                 }
             }
             snapshotting = true;
-            SnapshotStarted();
+            snapshotStarted();
             SaveState();
 
         }
     }
 
-    synchronized void SnapshotStarted(){
+    synchronized void snapshotStarted(){
         for (ConnectionManager connection :
                 connections) {
             try {
@@ -128,13 +130,13 @@ public class SnapshotCreator implements Serializable
 
     }
 
-    synchronized void SetSnapshotting(){
+    synchronized void setSnapshotting(){
         for (ConnectionManager c:connections) {
             c.SetSnapshotting();
         }
     }
 
-    synchronized void StopSnapshot(){
+    synchronized void stopSnapshot(){
         synchronized (snapshotLock){
             while(snapshotting){
                 try {
