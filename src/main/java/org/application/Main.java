@@ -19,7 +19,7 @@ public class Main {
         }
         SnapshotCreator snapshotCreator = null;
         try {
-            snapshotCreator = new SnapshotCreator((Serializable) controller);
+            snapshotCreator = new SnapshotCreator(controller);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -30,8 +30,6 @@ public class Main {
         snapshotCreator.SaveState();
         SnapshotCreator sc = snapshotCreator.SnapshotDeserialization();
         System.out.println(gson.toJson(sc));
-
-
 
 
     }

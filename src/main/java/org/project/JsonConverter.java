@@ -4,10 +4,15 @@ package org.project;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.*;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class is used to convert objects into strings and viceversa using JsonConverter
@@ -15,11 +20,16 @@ import java.io.*;
 public class  JsonConverter {
     private static GsonBuilder builder = new GsonBuilder();
     private static Gson gson;
+    private static SnapshotCreator snapshotCreator;
 
     static{
         builder.setPrettyPrinting();
-        builder.registerTypeAdapter(SnapshotCreator.class, new SnapshotCreatorAdapter());
+        builder.registerTypeAdapter(SnapshotCreator.class, new SnapshotCreatorAdapter(snapshotCreator));
         gson = builder.create();
+    }
+
+    public static void setSnapshotCreator(SnapshotCreator snapshotCreator) {
+        JsonConverter.snapshotCreator = snapshotCreator;
     }
 
     public static SnapshotCreator fromJsonToObject(String filename){
@@ -80,18 +90,35 @@ public class  JsonConverter {
 class SnapshotCreatorAdapter extends TypeAdapter<SnapshotCreator> {
     private static GsonBuilder builder = new GsonBuilder();
     private static Gson gson;
+    private SnapshotCreator snapshotCreator;
 
     static {
         builder.setPrettyPrinting();
         gson = builder.create();
     }
 
+    public SnapshotCreatorAdapter(SnapshotCreator snapshotCreator){
+            this.snapshotCreator=snapshotCreator;
+    }
+
+
     @Override
     public SnapshotCreator read(JsonReader reader) throws IOException {
-        String jsonString= gson.toJson(SnapshotCreator) + "\nEOF\n";
+        Type connectionsListType = new TypeToken<ArrayList<ConnectionManager>>(){}.getType();
+        Type savedMessagesMapType = new TypeToken<Map<String, List<Byte>>>(){}.getType();
+        Type contextObjectsListType = new TypeToken<List<Serializable>>(){}.getType();
+
+        snapshotCreator.setConnections(gson.fromJson(reader, connectionsListType));
+        snapshotCreator.setSavedMessages(gson.fromJson(reader, savedMessagesMapType));
+        snapshotCreator.setContextObjects(gson.fromJson(reader, contextObjectsListType));
+
+        return snapshotCreator;
     }
 
     @Override
     public void write(JsonWriter writer, SnapshotCreator student) throws IOException {
+        String jsonString= gson.toJson(snapshotCreator.getConnections());
+        jsonString +=  gson.toJson(snapshotCreator.getSavedMessages());
+        jsonString+= gson.toJson(snapshotCreator.getContextObjects())+ "\nEOF\n";
     }
 }

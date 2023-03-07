@@ -2,6 +2,7 @@ package org.project;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
+import org.application.Controller;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -16,16 +17,16 @@ public class SnapshotCreator
 {
     static final int serverPort=55831;
     //todo:non usiamo piu i serializable
-    private List<Serializable> contextObjects;
+    private List<Serializable> contextObjects; //
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
     private int numOfConnections;
-    private List<ConnectionManager> connections;
+    private List<ConnectionManager> connections; //
     private ConnectionAccepter connectionAccepter;
     private JsonConverter jsonConverter;
     boolean snapshotting;
     Object snapshotLock;
-    Map<String, List<Byte>> savedMessages;
+    Map<String, List<Byte>> savedMessages; //
     //Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
 
     //todo: news da Valentina
@@ -201,6 +202,29 @@ public class SnapshotCreator
         return sc;
     }
 
+    public List<ConnectionManager> getConnections() {
+        return connections;
+    }
+
+    public Map<String, List<Byte>> getSavedMessages() {
+        return savedMessages;
+    }
+
+    public List<Serializable> getContextObjects() {
+        return contextObjects;
+    }
+
+    public void setConnections(List<ConnectionManager> connections) {
+        this.connections = connections;
+    }
+
+    public void setSavedMessages(Map<String, List<Byte>> savedMessages) {
+        this.savedMessages = savedMessages;
+    }
+
+    public void setContextObjects(List<Serializable> contextObjects) {
+        this.contextObjects = contextObjects;
+    }
 
     /*
     public List<String> getChannelClosed(String name) {
