@@ -6,7 +6,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Controller extends Thread implements Serializable{
+public class Controller extends Thread{
     private Farm farm;
     //todo: valentina chiede: ci sta il singleton?
     private static Controller instance;

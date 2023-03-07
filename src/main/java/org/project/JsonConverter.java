@@ -3,7 +3,9 @@ package org.project;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 import java.io.*;
 
@@ -16,6 +18,7 @@ public class  JsonConverter {
 
     static{
         builder.setPrettyPrinting();
+        builder.registerTypeAdapter(SnapshotCreator.class, new SnapshotCreatorAdapter());
         gson = builder.create();
     }
 
@@ -71,5 +74,24 @@ public class  JsonConverter {
     public static String fromObjectToJson(SnapshotCreator snapshotCreator){
         String jsonString=gson.toJson(snapshotCreator) + "\nEOF\n";
         return(jsonString);
+    }
+}
+
+class SnapshotCreatorAdapter extends TypeAdapter<SnapshotCreator> {
+    private static GsonBuilder builder = new GsonBuilder();
+    private static Gson gson;
+
+    static {
+        builder.setPrettyPrinting();
+        gson = builder.create();
+    }
+
+    @Override
+    public SnapshotCreator read(JsonReader reader) throws IOException {
+        String jsonString= gson.toJson(SnapshotCreator) + "\nEOF\n";
+    }
+
+    @Override
+    public void write(JsonWriter writer, SnapshotCreator student) throws IOException {
     }
 }

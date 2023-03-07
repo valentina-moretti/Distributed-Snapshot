@@ -12,9 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 
-public class SnapshotCreator implements Serializable
+public class SnapshotCreator
 {
     static final int serverPort=55831;
+    //todo:non usiamo piu i serializable
     private List<Serializable> contextObjects;
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
