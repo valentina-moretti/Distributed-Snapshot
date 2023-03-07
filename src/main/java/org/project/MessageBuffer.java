@@ -8,7 +8,7 @@ class MessageBuffer
 {
     private static final Byte[] snapshotMessage =
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
-             (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
+                    (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
     private final Map<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
     private final SnapshotCreator snapshotManager;
 
@@ -34,7 +34,7 @@ class MessageBuffer
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
 
-        if(snapshotManager.isSnapshotting())
+        if(snapshotManager.IsSnapshotting())
         {
             if(checkSnapshotMessage(name)!=-1)
             {

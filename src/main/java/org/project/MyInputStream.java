@@ -8,6 +8,7 @@ class MyInputStream extends InputStream
     private InputStream inputStream;
     private final String name;
     private final MessageBuffer messageBuffer;
+
     MyInputStream(MessageBuffer messageBuffer, String connectionName)
     {
         this.name = connectionName;

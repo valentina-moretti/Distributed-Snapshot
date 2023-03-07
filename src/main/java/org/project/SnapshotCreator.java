@@ -64,7 +64,7 @@ public class SnapshotCreator implements Serializable
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages, this);
         connections.add(newConnectionM);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
@@ -75,7 +75,7 @@ public class SnapshotCreator implements Serializable
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages, this);
         connections.add(newConnectionM);
 
         nameToConnection.put(name, newConnectionM);
@@ -108,13 +108,14 @@ public class SnapshotCreator implements Serializable
                 }
             }
             snapshotting = true;
-            snapshotStarted();
+            SnapshotStarted();
             SaveState();
 
         }
     }
 
-    synchronized void snapshotStarted(){
+    //todo: errori: non sono cose che ha connection
+    synchronized void SnapshotStarted(){
         for (ConnectionManager connection :
                 connections) {
             try {
@@ -130,11 +131,17 @@ public class SnapshotCreator implements Serializable
 
     }
 
-    synchronized void setSnapshotting(){
-        for (ConnectionManager c:connections) {
-            c.SetSnapshotting();
-        }
+    //todo: solo per snapshot creator ( non per ogni connection manager)
+    synchronized void SetSnapshotting(){
+        snapshotting=true;
     }
+    
+    //todo: solo per snapshot creator ( non per ogni connection manager)
+    synchronized boolean IsSnapshotting(){
+        return snapshotting;
+    }
+    
+    
 
     synchronized void stopSnapshot(){
         synchronized (snapshotLock){

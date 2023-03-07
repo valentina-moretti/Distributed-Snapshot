@@ -15,12 +15,15 @@ class ConnectionManager extends Thread
     private final Socket socket;
     private final MessageBuffer buffer;
     private final String name;
+    private final SnapshotCreator s;
+    private boolean snapshotting = false;
 
-    ConnectionManager(Socket socket, String name, MessageBuffer buffer)
+    ConnectionManager(Socket socket, String name, MessageBuffer buffer, SnapshotCreator s)
     {
         this.socket = socket;
         this.buffer = buffer;
         this.name = name;
+        this.s = s;
     }
 
     @Override
@@ -35,14 +38,51 @@ class ConnectionManager extends Thread
     private void receive() throws IOException
     {
         List<Byte> readMessage = new ArrayList<>();
-        while (socket.getInputStream().available()!=0)
-            readMessage.add((byte) socket.getInputStream().read());
+        List<Byte> newMessage= null;
+        while (socket.getInputStream().available()!=0) {
+            byte newByte = (byte)socket.getInputStream().read();
+            readMessage.add(newByte);
+            newMessage.add(newByte);
+        }
 
         buffer.addMessage(name, readMessage);
+
+        if(this.snapshotting) {
+            s.savedMessages.put(name, readMessage);
+        }
+
+        if(newMessage.equals(255)/*leggo snapshot*/){
+
+            synchronized (s.snapshotLock) {
+                if (!this.snapshotting) {
+                    // already called by the one who has started the snapshot
+                    s.SnapshotStarted();
+                }
+                //smetto di salvare i messaggi su questo canale
+                this.snapshotting=false;;
+            }
+        }
+    }
+
+    public void SetSnapshotting(){
+        this.snapshotting=true;
     }
 
     public synchronized OutputStream getOutputStream() throws IOException
     {
         return socket.getOutputStream();
+    }
+
+    public synchronized InputStream getInputStream() throws IOException
+    {
+        return socket.getInputStream();
+    }
+
+    public MessageBuffer getBuffer() {
+        return buffer;
+    }
+
+    public boolean isSnapshotting() {
+        return snapshotting;
     }
 }
