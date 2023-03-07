@@ -21,6 +21,7 @@ public class SnapshotCreator implements Serializable
     private int numOfConnections;
     private List<ConnectionManager> connections;
     private ConnectionAccepter connectionAccepter;
+    private JsonConverter jsonConverter;
     boolean snapshotting;
     Object snapshotLock;
     Map<String, List<Byte>> savedMessages;
@@ -44,6 +45,7 @@ public class SnapshotCreator implements Serializable
             numOfConnections = 0;
             connectionAccepter.start();
             snapshotting = false;
+            jsonConverter= new JsonConverter();
         }
         else
         {
@@ -161,6 +163,7 @@ public class SnapshotCreator implements Serializable
         String filename = "SnapCreator.txt";
         String saveObjects = "Objects.txt";
 
+
         Gson gson = new Gson();
 
         // Serialization
@@ -170,7 +173,7 @@ public class SnapshotCreator implements Serializable
             BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.txt"));
 
             // Method for serialization of object
-            out.write(gson.toJson(this));
+            out.write(jsonConverter.fromObjectToJson(this));
 
             out.close();
 
@@ -187,25 +190,12 @@ public class SnapshotCreator implements Serializable
         SnapshotCreator sc = null;
 
         // Deserialization
-        try {
 
-            // Reading the object from a file
-            JsonReader reader = new JsonReader(new FileReader("SnapCreator.txt"));
-
-            Gson gson = new Gson();
 
             // Method for deserialization of object
-            sc = gson.fromJson(reader, SnapshotCreator.class);
-
-            reader.close();
+            sc = jsonConverter.fromJsonFileToObject("SnapCreator.txt");
             System.out.println("Object has been deserialized\n");
 
-
-        }
-
-        catch (IOException ex) {
-            System.out.println("IOException is caught");
-        }
 
         return sc;
     }
