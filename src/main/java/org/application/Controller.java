@@ -1,20 +1,28 @@
 package org.application;
 
+import java.io.File;
 import java.io.Serializable;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Controller {
-    private List<Socket> connectionsList;
-    private List<Serializable> serializableList;
-
-    public Controller(){
-        connectionsList= new ArrayList<>();
+public class Controller extends Thread implements Serializable{
+    private Farm farm;
+    //todo: valentina chiede: ci sta il singleton?
+    private static Controller instance;
+    public static Controller getInstance(){
+        if (instance == null){
+            instance = new Controller();
+        }
+        return instance;
+    }
+    private Controller(){
+        instance=null;
     }
 
-    public void start_application(){
-        Farm farm = new Farm(this);
+    public void run(){
+
+        farm = new Farm(this);
         Animal a = new Animal(this);
         farm.addAnimal(a, this);
         Animal b = new Animal(this);
@@ -23,11 +31,8 @@ public class Controller {
         b.addEnemy(a);
     }
 
-    public void addSerializable(Serializable serializable){
-        serializableList.add(serializable);
-    }
 
-    public List<Serializable> getSerializableList() {
-        return serializableList;
-    }
+
+
+
 }

@@ -11,7 +11,6 @@ public class Animal {
     public Animal(Controller controller){
         friendsList = new ArrayList<>();
         enemiesList = new ArrayList<>();
-        controller.addSerializable((Serializable) this);
     }
 
     public void addEnemy(Animal enemyList) {

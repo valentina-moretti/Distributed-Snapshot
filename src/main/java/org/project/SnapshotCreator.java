@@ -1,5 +1,7 @@
 package org.project;
 
+import com.google.gson.Gson;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -9,54 +11,64 @@ import java.util.List;
 import java.util.Map;
 
 
-public class SnapshotCreator implements Serializable
+public class SnapshotCreator
 {
     static final int serverPort=55831;
+    //todo:non usiamo piu i serializable
     private List<Serializable> contextObjects;
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
     private int numOfConnections;
     private List<ConnectionManager> connections;
     private ConnectionAccepter connectionAccepter;
-    boolean snapshotting;
-    Object snapshotLock;
-    Map<String, List<Byte>> savedMessages;
-    //Map<String, List<String>> channelClosed; // for each node, from what channel he has already received snap-message
+    private JsonConverter jsonConverter;
+    private boolean snapshotting;
+    private Map<String, Boolean> snapshotArrivedFrom;
+    private Map<String, List<Byte>> savedMessages;
 
     //todo: news da Valentina
     public SnapshotCreator(Serializable mainObject) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        File file=new File("savedState.txt");
+        File file=new File("SnapCreator.txt");
         //if the file do not exist: is the first time I'm creating it
-        if(file.length()==0){
+        if(file.length()==0)
+        {
             contextObjects = new ArrayList<>();
             contextObjects.add(mainObject);
-            messages = new MessageBuffer();
+            messages = new MessageBuffer(this);
             nameToConnection = new HashMap<>();
             connections = new ArrayList<>();
             connectionAccepter = new ConnectionAccepter(this);
             numOfConnections = 0;
             connectionAccepter.start();
             snapshotting = false;
+            snapshotArrivedFrom = new HashMap<>();
+            savedMessages = new HashMap<>();
+            jsonConverter= new JsonConverter();
         }
-        else{
+        else
+        {
             //I'm recovering
-            SnapshotCreator snapshotCreator_recovered = Deserialization();
+            SnapshotCreator snapshotCreator_recovered = snapshotDeserialization();
             snapshotCreator_recovered.connectionAccepter.start();
+            this.connections = snapshotCreator_recovered.connections;
+            this.savedMessages = snapshotCreator_recovered.savedMessages;
+            this.nameToConnection = snapshotCreator_recovered.nameToConnection;
+
         }
 
     }
-
 
 
     synchronized void connectionAccepted(Socket connection)
     {
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
+        messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
     }
@@ -66,17 +78,17 @@ public class SnapshotCreator implements Serializable
         numOfConnections++;
         String name = "Connection" + Integer.toString(numOfConnections);
         Socket socket = new Socket(address, serverPort);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages, this);
+        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
-
+        messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
         return name;
     }
 
-    synchronized public InputStream getInputStream(String name)
+    synchronized public InputStream getInputStream(String connectionName)
     {
-        return messages.getInputStream(name);
+        return new MyInputStream(messages, connectionName);
     }
 
     synchronized public OutputStream getOutputStream(String name) throws IOException
@@ -89,78 +101,72 @@ public class SnapshotCreator implements Serializable
         contextObjects.add(newObject);
     }
 
-    synchronized public void StartSnapshot(){
-        synchronized (snapshotLock){
-            while(snapshotting){
-                try {
-                    snapshotLock.wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            snapshotting = true;
-            SnapshotStarted();
-            SaveState();
+    synchronized void startSnapshot()
+    {
+        saveState();
+        savedMessages.clear();
+        snapshotArrivedFrom.clear();
+        for(String connectionName : nameToConnection.keySet())
+            snapshotArrivedFrom.put(connectionName, false);
+        snapshotting = true;
 
-        }
+        //TODO: send snapshot to everybody
     }
 
-    synchronized void SnapshotStarted(){
-        for (ConnectionManager connection :
-                connections) {
-            try {
-                BufferedWriter out = new BufferedWriter(new OutputStreamWriter( connection.getOutputStream() ));
-                out.write((byte) 255);
-                BufferedReader in = new BufferedReader(new InputStreamReader( connection.getInputStream() ));
-                connection.SetSnapshotting();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        //send snapshot messages to everybody
-
+    synchronized void snapshotMessageArrived(String connectionName)
+    {
+        snapshotArrivedFrom.replace(connectionName, true);
+        boolean snapshotEndedFlag = false;
+        for(Boolean arrived : snapshotArrivedFrom.values())
+            snapshotEndedFlag = snapshotting && arrived;
+        if(snapshotEndedFlag)
+            stopSnapshot();
     }
 
-    synchronized void SetSnapshotting(){
-        for (ConnectionManager c:connections) {
-            c.SetSnapshotting();
-        }
+    synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
+    {
+        savedMessages.get(connectionName).addAll(message);
     }
 
-    synchronized void StopSnapshot(){
-        synchronized (snapshotLock){
-            while(snapshotting){
-                try {
-                    snapshotLock.wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            snapshotting = false;
-
-        }
+    synchronized private void stopSnapshot()
+    {
+        snapshotting = false;
+        //TODO: salvo tutti i messaggi e lo stato nello stesso file
     }
 
-    public void SaveState(){
-        String filename = "savedState.txt";
+    synchronized boolean isSnapshotting()
+    {
+        return snapshotting;
+    }
+
+
+
+
+
+
+
+
+
+
+    public void saveState(){
+        String filename = "SnapCreator.txt";
+        String saveObjects = "Objects.txt";
+
+
+        Gson gson = new Gson();
 
         // Serialization
         try {
 
-            // Saving of object in a file
-            FileOutputStream file = new FileOutputStream
-                    (filename);
-            ObjectOutputStream out = new ObjectOutputStream
-                    (file);
+            // Saving of SnapCreator in a file
+            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.txt"));
 
             // Method for serialization of object
-            out.writeObject(this);
+            out.write(jsonConverter.fromObjectToJson(this));
 
             out.close();
-            file.close();
 
-            System.out.println("Object has been serialized\n"
-                    + "Data before Deserialization.");
+            System.out.println("Object has been serialized\n");
 
         }
 
@@ -169,38 +175,45 @@ public class SnapshotCreator implements Serializable
         }
     }
 
-    public SnapshotCreator Deserialization(){
-        SnapshotCreator object = null;
+    public SnapshotCreator snapshotDeserialization(){
+        SnapshotCreator sc = null;
 
         // Deserialization
-        try {
 
-            // Reading the object from a file
-            FileInputStream file = new FileInputStream
-                    ("savedState.txt");
-            ObjectInputStream in = new ObjectInputStream
-                    (file);
 
             // Method for deserialization of object
-            object = (SnapshotCreator)in.readObject();
+            sc = jsonConverter.fromJsonFileToObject("SnapCreator.txt");
+            System.out.println("Object has been deserialized\n");
 
-            in.close();
-            file.close();
-            System.out.println("Object has been deserialized\n"
-                    + "Data after Deserialization.");
-        }
 
-        catch (IOException ex) {
-            System.out.println("IOException is caught");
-        }
-
-        catch (ClassNotFoundException ex) {
-            System.out.println("ClassNotFoundException" +
-                    " is caught");
-        }
-        return object;
+        return sc;
     }
 
+    // TODO: questi metodi non dovrebbbero esserci
+    /*
+    public List<ConnectionManager> getConnections() {
+        return connections;
+    }
+
+    public Map<String, List<Byte>> getSavedMessages() {
+        return savedMessages;
+    }
+
+    public List<Serializable> getContextObjects() {
+        return contextObjects;
+    }
+
+    public void setConnections(List<ConnectionManager> connections) {
+        this.connections = connections;
+    }
+
+    public void setSavedMessages(Map<String, List<Byte>> savedMessages) {
+        this.savedMessages = savedMessages;
+    }
+
+    public void setContextObjects(List<Serializable> contextObjects) {
+        this.contextObjects = contextObjects;
+    }
 
     /*
     public List<String> getChannelClosed(String name) {

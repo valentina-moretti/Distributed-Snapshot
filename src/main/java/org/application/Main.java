@@ -1,6 +1,7 @@
 package org.application;
 
 
+import com.google.gson.Gson;
 import org.project.SnapshotCreator;
 
 import java.io.IOException;
@@ -9,15 +10,28 @@ import java.io.Serializable;
 public class Main {
 
     public static void main(String[] args){
-        Controller controller= new Controller();
+        Controller controller = Controller.getInstance();
+        int serverPort;
+        if (args.length == 0) {
+            serverPort = 35002;
+        } else {
+            serverPort = Integer.parseInt(args[0]);
+        }
+        SnapshotCreator snapshotCreator = null;
         try {
-            SnapshotCreator snapshotCreator = new SnapshotCreator((Serializable) controller);
+            snapshotCreator = new SnapshotCreator(controller);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        controller.start_application();
-        Recovery recovery= new Recovery();
-        recovery.recover(controller);
+
+        Thread controllerThread= new Thread(controller);
+        controllerThread.run();
+        Gson gson = new Gson();
+        snapshotCreator.SaveState();
+        SnapshotCreator sc = snapshotCreator.SnapshotDeserialization();
+        System.out.println(gson.toJson(sc));
+
+
     }
 
 
