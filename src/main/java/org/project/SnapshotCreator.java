@@ -18,7 +18,6 @@ public class SnapshotCreator
     private List<Serializable> contextObjects;
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
-    private int numOfConnections;
     private List<ConnectionManager> connections;
     private ConnectionAccepter connectionAccepter;
     private JsonConverter jsonConverter;
@@ -41,7 +40,6 @@ public class SnapshotCreator
             nameToConnection = new HashMap<>();
             connections = new ArrayList<>();
             connectionAccepter = new ConnectionAccepter(this);
-            numOfConnections = 0;
             connectionAccepter.start();
             snapshotting = false;
             snapshotArrivedFrom = new HashMap<>();
@@ -64,8 +62,7 @@ public class SnapshotCreator
 
     synchronized void connectionAccepted(Socket connection)
     {
-        numOfConnections++;
-        String name = "Connection" + Integer.toString(numOfConnections);
+        String name = connection.getInetAddress().toString();
         ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
         messages.addClient(name);
@@ -75,8 +72,7 @@ public class SnapshotCreator
 
     synchronized public String connect_to(InetAddress address) throws IOException
     {
-        numOfConnections++;
-        String name = "Connection" + Integer.toString(numOfConnections);
+        String name = address.toString();
         Socket socket = new Socket(address, serverPort);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
