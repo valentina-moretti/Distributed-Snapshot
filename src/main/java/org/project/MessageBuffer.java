@@ -75,4 +75,8 @@ class MessageBuffer
         }
         return -1;
     }
+
+    public Map<String, List<Byte>> getIncomingMessages() {
+        return incomingMessages;
+    }
 }

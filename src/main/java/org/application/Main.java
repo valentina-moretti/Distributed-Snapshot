@@ -17,19 +17,14 @@ public class Main {
         } else {
             serverPort = Integer.parseInt(args[0]);
         }
-        SnapshotCreator snapshotCreator = null;
-        try {
-            snapshotCreator = new SnapshotCreator(controller);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        controller.setServerPort(serverPort);
 
         Thread controllerThread= new Thread(controller);
-        controllerThread.run();
+        controllerThread.start();
         Gson gson = new Gson();
-        snapshotCreator.SaveState();
-        SnapshotCreator sc = snapshotCreator.SnapshotDeserialization();
-        System.out.println(gson.toJson(sc));
+        Farm f = controller.getFarm();
+
+        System.out.println(gson.toJson(controller));
 
 
     }
