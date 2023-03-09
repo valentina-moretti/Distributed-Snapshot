@@ -117,8 +117,8 @@ class SnapshotCreatorAdapter extends TypeAdapter<SnapshotCreator> {
 
     @Override
     public void write(JsonWriter writer, SnapshotCreator student) throws IOException {
-        String jsonString= gson.toJson(snapshotCreator.getConnections());
-        jsonString +=  gson.toJson(snapshotCreator.getSavedMessages());
-        jsonString+= gson.toJson(snapshotCreator.getContextObjects())+ "\nEOF\n";
+        // String jsonString= gson.toJson(snapshotCreator.getConnections());
+        // jsonString +=  gson.toJson(snapshotCreator.getSavedMessages());
+        // jsonString+= gson.toJson(snapshotCreator.getContextObjects())+ "\nEOF\n";
     }
 }

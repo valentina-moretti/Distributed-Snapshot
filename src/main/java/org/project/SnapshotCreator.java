@@ -18,7 +18,6 @@ public class SnapshotCreator
     private List<Serializable> contextObjects;
     private MessageBuffer messages;
     private Map<String, ConnectionManager> nameToConnection;
-    private int numOfConnections;
     private List<ConnectionManager> connections;
     private ConnectionAccepter connectionAccepter;
     private JsonConverter jsonConverter;
@@ -41,7 +40,6 @@ public class SnapshotCreator
             nameToConnection = new HashMap<>();
             connections = new ArrayList<>();
             connectionAccepter = new ConnectionAccepter(this);
-            numOfConnections = 0;
             connectionAccepter.start();
             snapshotting = false;
             snapshotArrivedFrom = new HashMap<>();
@@ -64,8 +62,7 @@ public class SnapshotCreator
 
     synchronized void connectionAccepted(Socket connection)
     {
-        numOfConnections++;
-        String name = "Connection" + Integer.toString(numOfConnections);
+        String name = connection.getInetAddress().toString();
         ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
         connections.add(newConnectionM);
         messages.addClient(name);
@@ -75,8 +72,7 @@ public class SnapshotCreator
 
     synchronized public String connect_to(InetAddress address) throws IOException
     {
-        numOfConnections++;
-        String name = "Connection" + Integer.toString(numOfConnections);
+        String name = address.toString();
         Socket socket = new Socket(address, serverPort);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
@@ -110,7 +106,15 @@ public class SnapshotCreator
             snapshotArrivedFrom.put(connectionName, false);
         snapshotting = true;
 
-        //TODO: send snapshot to everybody
+        byte[] snapshotMessage = new byte[MessageBuffer.snapshotMessage.length];
+        for(int i=0; i<MessageBuffer.snapshotMessage.length; i++)
+            snapshotMessage[i] = MessageBuffer.snapshotMessage[i];
+        for(ConnectionManager c : connections)
+        {
+            try {
+                c.getOutputStream().write(snapshotMessage);
+            } catch (IOException e) { throw new RuntimeException("IOException"); }
+        }
     }
 
     synchronized void snapshotMessageArrived(String connectionName)
@@ -131,21 +135,33 @@ public class SnapshotCreator
     synchronized private void stopSnapshot()
     {
         snapshotting = false;
+        notifyAll();
         //TODO: salvo tutti i messaggi e lo stato nello stesso file
     }
 
+    synchronized void waitUntilSnapshotEnded() throws InterruptedException
+    {
+        while (isSnapshotting())
+            wait();
+    }
     synchronized boolean isSnapshotting()
     {
         return snapshotting;
     }
 
+    void SerializeMessages(){
+        Gson gson = new Gson();
 
+        // Method for serialization of object
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter("Messages.txt"));
+            out.write(gson.toJson(savedMessages));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-
-
-
-
-
+    }
 
 
     public void saveState(){
@@ -163,6 +179,8 @@ public class SnapshotCreator
 
             // Method for serialization of object
             out.write(jsonConverter.fromObjectToJson(this));
+
+
 
             out.close();
 
@@ -189,49 +207,25 @@ public class SnapshotCreator
         return sc;
     }
 
-    // TODO: questi metodi non dovrebbbero esserci
-    /*
+    public Map<String, ConnectionManager> getNameToConnection() {
+        return nameToConnection;
+    }
+
+    public Map<String, List<Byte>> getIncomingMessages(ConnectionManager connectionManager) {
+        return connectionManager.getBuffer().getIncomingMessages();
+    }
+
+    public Map<String, Map<String, List<Byte>>> readMessages(){
+        Map<String, Map<String, List<Byte>>> messages = new HashMap<>();
+        for (ConnectionManager connectionManager: connections){
+            messages.put(connectionManager.getIp(), getIncomingMessages(connectionManager));
+        }
+        return messages;
+    }
+
     public List<ConnectionManager> getConnections() {
         return connections;
     }
 
-    public Map<String, List<Byte>> getSavedMessages() {
-        return savedMessages;
-    }
 
-    public List<Serializable> getContextObjects() {
-        return contextObjects;
-    }
-
-    public void setConnections(List<ConnectionManager> connections) {
-        this.connections = connections;
-    }
-
-    public void setSavedMessages(Map<String, List<Byte>> savedMessages) {
-        this.savedMessages = savedMessages;
-    }
-
-    public void setContextObjects(List<Serializable> contextObjects) {
-        this.contextObjects = contextObjects;
-    }
-
-    /*
-    public List<String> getChannelClosed(String name) {
-        return channelClosed.get(name);
-    }
-
-    public void setChannelClosed(String who, String whichChannel) {
-        this.channelClosed.get(who).add(whichChannel);
-    }
-    */
-
-
-
-    /*
-    synchronized public List<Byte> readMessage(String name){
-        ConnectionManager connectionManager = nameToConnection.get(name);
-        MessageBuffer messageBuffer = connectionManager.getBuffer();
-        return messageBuffer.retrieveMessage(name);
-    }
-    */
 }

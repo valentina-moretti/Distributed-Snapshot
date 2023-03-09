@@ -6,7 +6,7 @@ import java.util.*;
 
 class MessageBuffer
 {
-    private static final Byte[] snapshotMessage =
+    static final Byte[] snapshotMessage =
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
     private final Map<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
@@ -34,24 +34,26 @@ class MessageBuffer
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
 
+        int snapPosition = checkSnapshotMessage(name);
         if(snapshotManager.isSnapshotting())
         {
-            if(checkSnapshotMessage(name)!=-1)
+            if(snapPosition!=-1)
             {
-                //TODO: salvo i messaggi arrivati fino al messaggio di snapshot e segnalo che da questa
-                // connessione è arrivato il messaggio di snapshot
+                snapshotManager.messageDuringSnapshot
+                        (name, new ArrayList<>(incomingMessages.get(name).subList(0, snapPosition)));
                 snapshotManager.snapshotMessageArrived(name);
             }
             else
             {
-                //TODO: salva i messaggi arrivati durante lo snapshot
+                snapshotManager.messageDuringSnapshot(name, new ArrayList<>(incomingMessages.get(name)));
             }
         }
         else
         {
-            if(checkSnapshotMessage(name)!=-1)
+            if(snapPosition!=-1)
                 snapshotManager.startSnapshot();
-            //TODO: salva messagi dopo lo snapshot nei messaggi registrati durante lo snapshot
+            snapshotManager.messageDuringSnapshot (name,
+               new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
         }
         incomingMessages.get(name).clear();
         return new ByteArrayInputStream(input);
@@ -74,5 +76,9 @@ class MessageBuffer
             }
         }
         return -1;
+    }
+
+    public Map<String, List<Byte>> getIncomingMessages() {
+        return incomingMessages;
     }
 }

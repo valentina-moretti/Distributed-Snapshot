@@ -45,4 +45,12 @@ class ConnectionManager extends Thread
     {
         return socket.getOutputStream();
     }
+
+    public MessageBuffer getBuffer() {
+        return buffer;
+    }
+
+    public String getIp() {
+        return name;
+    }
 }

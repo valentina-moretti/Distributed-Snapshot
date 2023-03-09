@@ -4,11 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Animal {
+public class Animal implements Serializable{
     private List<Animal> friendsList;
     private List<Animal> enemiesList;
+    private String name;
 
-    public Animal(Controller controller){
+    public Animal(String name){
+        this.name = name;
         friendsList = new ArrayList<>();
         enemiesList = new ArrayList<>();
     }
@@ -21,6 +23,7 @@ public class Animal {
         this.friendsList.add(enemyList);
     }
 
-
-
+    public String getName() {
+        return name;
+    }
 }
