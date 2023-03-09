@@ -106,7 +106,15 @@ public class SnapshotCreator
             snapshotArrivedFrom.put(connectionName, false);
         snapshotting = true;
 
-        //TODO: send snapshot to everybody
+        byte[] snapshotMessage = new byte[MessageBuffer.snapshotMessage.length];
+        for(int i=0; i<MessageBuffer.snapshotMessage.length; i++)
+            snapshotMessage[i] = MessageBuffer.snapshotMessage[i];
+        for(ConnectionManager c : connections)
+        {
+            try {
+                c.getOutputStream().write(snapshotMessage);
+            } catch (IOException e) { throw new RuntimeException("IOException"); }
+        }
     }
 
     synchronized void snapshotMessageArrived(String connectionName)
@@ -127,9 +135,15 @@ public class SnapshotCreator
     synchronized private void stopSnapshot()
     {
         snapshotting = false;
+        notifyAll();
         //TODO: salvo tutti i messaggi e lo stato nello stesso file
     }
 
+    synchronized void waitUntilSnapshotEnded() throws InterruptedException
+    {
+        while (isSnapshotting())
+            wait();
+    }
     synchronized boolean isSnapshotting()
     {
         return snapshotting;

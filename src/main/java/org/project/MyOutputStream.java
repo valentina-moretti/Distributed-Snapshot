@@ -17,14 +17,9 @@ class MyOutputStream extends OutputStream
     @Override
     synchronized public void write(int b) throws IOException
     {
-        while (snapshotManager.isSnapshotting())
-        {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        try {
+            snapshotManager.waitUntilSnapshotEnded();
+        } catch (InterruptedException e) { throw new RuntimeException("InterruptedException"); }
         outputStream.write(b);
     }
 }
