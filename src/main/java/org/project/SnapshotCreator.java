@@ -135,9 +135,15 @@ public class SnapshotCreator
     synchronized private void stopSnapshot()
     {
         snapshotting = false;
+        notifyAll();
         //TODO: salvo tutti i messaggi e lo stato nello stesso file
     }
 
+    synchronized void waitUntilSnapshotEnded() throws InterruptedException
+    {
+        while (isSnapshotting())
+            wait();
+    }
     synchronized boolean isSnapshotting()
     {
         return snapshotting;
