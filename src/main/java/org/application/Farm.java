@@ -1,10 +1,11 @@
 package org.application;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class Farm {
+public class Farm implements Serializable {
     private List<Animal> animalList;
 
     public Farm(Controller controller){

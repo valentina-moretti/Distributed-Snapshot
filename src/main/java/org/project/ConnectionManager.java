@@ -49,4 +49,8 @@ class ConnectionManager extends Thread
     public MessageBuffer getBuffer() {
         return buffer;
     }
+
+    public String getIp() {
+        return name;
+    }
 }

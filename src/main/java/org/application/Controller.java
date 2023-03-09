@@ -45,8 +45,9 @@ public class Controller extends Thread implements Serializable{
                     System.out.println(sc.getNameToConnection());
                 }
                 else if (s.equals("write")){
-                    System.out.println("Select connection: ");
+                    System.out.println("Select IP address from: ");
                     System.out.println(sc.getNameToConnection());
+                    System.out.println("IP: ");
                     s = console.readLine();
                     sc.connect_to(InetAddress.getByName(s));
                 }
@@ -69,9 +70,6 @@ public class Controller extends Thread implements Serializable{
     }
 
     void read(){
-        int numOfConnections = sc.
-        while(true){
-            size = sc.
-        }
+        System.out.println(sc.readMessages());
     }
 }

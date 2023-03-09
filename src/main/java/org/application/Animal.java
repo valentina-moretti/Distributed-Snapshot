@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Animal {
+public class Animal implements Serializable{
     private List<Animal> friendsList;
     private List<Animal> enemiesList;
     private String name;

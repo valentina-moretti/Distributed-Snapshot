@@ -135,13 +135,19 @@ public class SnapshotCreator
         return snapshotting;
     }
 
+    void SerializeMessages(){
+        Gson gson = new Gson();
 
+        // Method for serialization of object
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter("Messages.txt"));
+            out.write(gson.toJson(savedMessages));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-
-
-
-
-
+    }
 
 
     public void saveState(){
@@ -159,6 +165,8 @@ public class SnapshotCreator
 
             // Method for serialization of object
             out.write(jsonConverter.fromObjectToJson(this));
+
+
 
             out.close();
 
@@ -193,54 +201,17 @@ public class SnapshotCreator
         return connectionManager.getBuffer().getIncomingMessages();
     }
 
+    public Map<String, Map<String, List<Byte>>> readMessages(){
+        Map<String, Map<String, List<Byte>>> messages = new HashMap<>();
+        for (ConnectionManager connectionManager: connections){
+            messages.put(connectionManager.getIp(), getIncomingMessages(connectionManager));
+        }
+        return messages;
+    }
+
     public List<ConnectionManager> getConnections() {
         return connections;
     }
 
 
-    // TODO: questi metodi non dovrebbbero esserci
-    /*
-    public List<ConnectionManager> getConnections() {
-        return connections;
-    }
-
-    public Map<String, List<Byte>> getSavedMessages() {
-        return savedMessages;
-    }
-
-    public List<Serializable> getContextObjects() {
-        return contextObjects;
-    }
-
-    public void setConnections(List<ConnectionManager> connections) {
-        this.connections = connections;
-    }
-
-    public void setSavedMessages(Map<String, List<Byte>> savedMessages) {
-        this.savedMessages = savedMessages;
-    }
-
-    public void setContextObjects(List<Serializable> contextObjects) {
-        this.contextObjects = contextObjects;
-    }
-
-    /*
-    public List<String> getChannelClosed(String name) {
-        return channelClosed.get(name);
-    }
-
-    public void setChannelClosed(String who, String whichChannel) {
-        this.channelClosed.get(who).add(whichChannel);
-    }
-    */
-
-
-
-    /*
-    synchronized public List<Byte> readMessage(String name){
-        ConnectionManager connectionManager = nameToConnection.get(name);
-        MessageBuffer messageBuffer = connectionManager.getBuffer();
-        return messageBuffer.retrieveMessage(name);
-    }
-    */
 }
