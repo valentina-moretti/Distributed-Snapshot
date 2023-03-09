@@ -108,17 +108,17 @@ class SnapshotCreatorAdapter extends TypeAdapter<SnapshotCreator> {
         Type savedMessagesMapType = new TypeToken<Map<String, List<Byte>>>(){}.getType();
         Type contextObjectsListType = new TypeToken<List<Serializable>>(){}.getType();
 
-        snapshotCreator.setConnections(gson.fromJson(reader, connectionsListType));
-        snapshotCreator.setSavedMessages(gson.fromJson(reader, savedMessagesMapType));
-        snapshotCreator.setContextObjects(gson.fromJson(reader, contextObjectsListType));
+        // snapshotCreator.setConnections(gson.fromJson(reader, connectionsListType));
+        // snapshotCreator.setSavedMessages(gson.fromJson(reader, savedMessagesMapType));
+        // snapshotCreator.setContextObjects(gson.fromJson(reader, contextObjectsListType));
 
         return snapshotCreator;
     }
 
     @Override
     public void write(JsonWriter writer, SnapshotCreator student) throws IOException {
-        String jsonString= gson.toJson(snapshotCreator.getConnections());
-        jsonString +=  gson.toJson(snapshotCreator.getSavedMessages());
-        jsonString+= gson.toJson(snapshotCreator.getContextObjects())+ "\nEOF\n";
+        // String jsonString= gson.toJson(snapshotCreator.getConnections());
+        // jsonString +=  gson.toJson(snapshotCreator.getSavedMessages());
+        // jsonString+= gson.toJson(snapshotCreator.getContextObjects())+ "\nEOF\n";
     }
 }

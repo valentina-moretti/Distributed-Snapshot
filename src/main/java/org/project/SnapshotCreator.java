@@ -193,6 +193,19 @@ public class SnapshotCreator
         return sc;
     }
 
+    public Map<String, ConnectionManager> getNameToConnection() {
+        return nameToConnection;
+    }
+
+    public Map<String, List<Byte>> getIncomingMessages(ConnectionManager connectionManager) {
+        return connectionManager.getBuffer().getIncomingMessages();
+    }
+
+    public List<ConnectionManager> getConnections() {
+        return connections;
+    }
+
+
     // TODO: questi metodi non dovrebbbero esserci
     /*
     public List<ConnectionManager> getConnections() {
