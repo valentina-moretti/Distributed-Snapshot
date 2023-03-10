@@ -1,8 +1,10 @@
 package org.project;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -15,7 +17,7 @@ public class SnapshotCreator
 {
     static int serverPort;
     //todo:non usiamo piu i serializable
-    private List<Serializable> contextObjects;
+    private ArrayList<Serializable> contextObjects;
     private MessageBuffer messages;
     private List<String> connectionNames;
     private transient Map<String, ConnectionManager> nameToConnection;
@@ -31,34 +33,68 @@ public class SnapshotCreator
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        File file=new File("SnapCreator.txt");
+        snapshotting = false;
+        snapshotArrivedFrom = new HashMap<>();
+        jsonConverter= new JsonConverter();
+        messages = new MessageBuffer(this);
+        nameToConnection = new HashMap<>();
+        connections = new ArrayList<>();
+        connectionNames = new ArrayList<>();
+        contextObjects = new ArrayList<>();
+        savedMessages = new HashMap<>();
+
+        File file=new File("Objects.json");
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0)
         {
             SnapshotCreator.serverPort = serverPort;
-            connectionNames = new ArrayList<>();
-            contextObjects = new ArrayList<>();
             contextObjects.add(mainObject);
-            messages = new MessageBuffer(this);
-            nameToConnection = new HashMap<>();
-            connections = new ArrayList<>();
-            connectionAccepter = new ConnectionAccepter(this);
-            connectionAccepter.start();
-            snapshotting = false;
-            snapshotArrivedFrom = new HashMap<>();
-            savedMessages = new HashMap<>();
-            jsonConverter= new JsonConverter();
         }
-        else
-        {
+        else {
             //I'm recovering
-            SnapshotCreator snapshotCreator_recovered = snapshotDeserialization();
-            snapshotCreator_recovered.connectionAccepter.start();
-            this.connections = snapshotCreator_recovered.connections;
-            this.savedMessages = snapshotCreator_recovered.savedMessages;
-            this.nameToConnection = snapshotCreator_recovered.nameToConnection;
+            System.out.println("Recovering.");
+            Recover();
+            System.out.println("Recovering completed.");
 
         }
+        connectionAccepter = new ConnectionAccepter(this);
+        connectionAccepter.start();
+
+
+    }
+
+    void Recover() throws IOException {
+        Gson gson = new Gson();
+
+        //Port
+        BufferedReader in = new BufferedReader(new FileReader("Port.json"));
+        SnapshotCreator.serverPort = gson.fromJson(in, Integer.class);
+
+
+        //Objects
+        in = new BufferedReader(new FileReader("Objects.json"));
+        this.contextObjects = gson.fromJson(in, new TypeToken<ArrayList<Serializable>>(){}.getType());
+
+        //Connections
+        in = new BufferedReader(new FileReader("Connections.json"));
+        ArrayList<String> oldConnections = gson.fromJson(in, new TypeToken<ArrayList<String>>(){}.getType());
+
+        for (String connection:
+                oldConnections) {
+            connection = connection.substring(1);
+            String[] ipAndPort = connection.split("-");
+            try{
+                connect_to(InetAddress.getByName(ipAndPort[0]), Integer.valueOf(ipAndPort[1]));
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }
+
+        //Messages
+
+        in = new BufferedReader(new FileReader("Connections.json"));
+        this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, List<Byte>>>(){}.getType());
 
     }
 
@@ -143,7 +179,7 @@ public class SnapshotCreator
         notifyAll();
         SerializeMessages();
         SerializeConnections();
-        //TODO: salvo tutti i messaggi e lo stato nello stesso file
+        System.out.println(">> Snapshot ended <<");
     }
 
     synchronized void waitUntilSnapshotEnded() throws InterruptedException
@@ -160,7 +196,7 @@ public class SnapshotCreator
         Gson gson = new Gson();
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Messages.txt"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Messages.json"));
             out.write(gson.toJson(savedMessages));
             out.close();
         } catch (IOException e) {
@@ -173,7 +209,7 @@ public class SnapshotCreator
         Gson gson = new Gson();
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Objects.txt"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Objects.json"));
             out.write(gson.toJson(contextObjects));
             out.close();
         } catch (IOException e) {
@@ -192,8 +228,16 @@ public class SnapshotCreator
 
         // Method for serialization of object
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Connections.txt"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Connections.json"));
             out.write(gson.toJson(conn));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter("Port.json"));
+            out.write(gson.toJson(serverPort));
             out.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -203,8 +247,8 @@ public class SnapshotCreator
 
 
     public void saveState(){
-        String filename = "SnapCreator.txt";
-        String saveObjects = "Objects.txt";
+        String filename = "SnapCreator.json";
+        String saveObjects = "Objects.json";
 
 
         Gson gson = new Gson();
@@ -213,7 +257,7 @@ public class SnapshotCreator
         try {
 
             // Saving of SnapCreator in a file
-            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.txt"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.json"));
 
             // Method for serialization of object
             out.write(jsonConverter.fromObjectToJson(this));
@@ -238,7 +282,7 @@ public class SnapshotCreator
 
 
             // Method for deserialization of object
-            sc = jsonConverter.fromJsonFileToObject("SnapCreator.txt");
+            sc = jsonConverter.fromJsonFileToObject("SnapCreator.json");
             System.out.println("Object has been deserialized\n");
 
 
