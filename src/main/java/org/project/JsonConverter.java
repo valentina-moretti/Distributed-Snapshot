@@ -108,9 +108,9 @@ class SnapshotCreatorAdapter extends TypeAdapter<SnapshotCreator> {
         Type savedMessagesMapType = new TypeToken<Map<String, List<Byte>>>(){}.getType();
         Type contextObjectsListType = new TypeToken<List<Serializable>>(){}.getType();
 
-        snapshotCreator.setConnections(gson.fromJson(reader, connectionsListType));
-        snapshotCreator.setSavedMessages(gson.fromJson(reader, savedMessagesMapType));
-        snapshotCreator.setContextObjects(gson.fromJson(reader, contextObjectsListType));
+        //snapshotCreator.setConnections(gson.fromJson(reader, connectionsListType));
+        //snapshotCreator.setSavedMessages(gson.fromJson(reader, savedMessagesMapType));
+        //snapshotCreator.setContextObjects(gson.fromJson(reader, contextObjectsListType));
 
         return snapshotCreator;
     }

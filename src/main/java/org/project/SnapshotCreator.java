@@ -13,20 +13,21 @@ import java.util.Map;
 
 public class SnapshotCreator
 {
-    static final int serverPort=55831;
+    static int serverPort;
     //todo:non usiamo piu i serializable
     private List<Serializable> contextObjects;
     private MessageBuffer messages;
-    private Map<String, ConnectionManager> nameToConnection;
-    private List<ConnectionManager> connections;
-    private ConnectionAccepter connectionAccepter;
-    private JsonConverter jsonConverter;
+    private List<String> connectionNames;
+    private transient Map<String, ConnectionManager> nameToConnection;
+    private transient List<ConnectionManager> connections;
+    private transient ConnectionAccepter connectionAccepter;
+    private transient JsonConverter jsonConverter;
     private boolean snapshotting;
-    private Map<String, Boolean> snapshotArrivedFrom;
+    private transient Map<String, Boolean> snapshotArrivedFrom;
     private Map<String, List<Byte>> savedMessages;
 
     //todo: news da Valentina
-    public SnapshotCreator(Serializable mainObject) throws IOException
+    public SnapshotCreator(Serializable mainObject, int serverPort) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
@@ -34,6 +35,8 @@ public class SnapshotCreator
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0)
         {
+            SnapshotCreator.serverPort = serverPort;
+            connectionNames = new ArrayList<>();
             contextObjects = new ArrayList<>();
             contextObjects.add(mainObject);
             messages = new MessageBuffer(this);
@@ -62,18 +65,20 @@ public class SnapshotCreator
 
     synchronized void connectionAccepted(Socket connection)
     {
-        String name = connection.getInetAddress().toString();
+        String name = connection.getInetAddress().toString() + "-" + connection.getPort();
         ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+        connectionNames.add(name);
         connections.add(newConnectionM);
         messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
     }
 
-    synchronized public String connect_to(InetAddress address) throws IOException
+    synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
-        String name = address.toString();
-        Socket socket = new Socket(address, serverPort);
+        String name = address.toString() + "-" + port;
+        Socket socket = new Socket(address, port);
+        connectionNames.add(name);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
         messages.addClient(name);
@@ -97,7 +102,7 @@ public class SnapshotCreator
         contextObjects.add(newObject);
     }
 
-    synchronized void startSnapshot()
+    synchronized public void startSnapshot()
     {
         saveState();
         savedMessages.clear();
@@ -136,6 +141,8 @@ public class SnapshotCreator
     {
         snapshotting = false;
         notifyAll();
+        SerializeMessages();
+        SerializeConnections();
         //TODO: salvo tutti i messaggi e lo stato nello stesso file
     }
 
@@ -149,13 +156,44 @@ public class SnapshotCreator
         return snapshotting;
     }
 
-    void SerializeMessages(){
+    public void SerializeMessages(){
         Gson gson = new Gson();
 
-        // Method for serialization of object
         try {
             BufferedWriter out = new BufferedWriter(new FileWriter("Messages.txt"));
             out.write(gson.toJson(savedMessages));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void SerializeObjects(){
+        Gson gson = new Gson();
+
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter("Objects.txt"));
+            out.write(gson.toJson(contextObjects));
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void SerializeConnections(){
+        Gson gson = new Gson();
+        ArrayList<String> conn = new ArrayList<>();
+        for (ConnectionManager connectionManager :
+                connections) {
+            conn.add(connectionManager.getIp());
+        }
+
+        // Method for serialization of object
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter("Connections.txt"));
+            out.write(gson.toJson(conn));
             out.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -211,16 +249,11 @@ public class SnapshotCreator
         return nameToConnection;
     }
 
-    public Map<String, List<Byte>> getIncomingMessages(ConnectionManager connectionManager) {
-        return connectionManager.getBuffer().getIncomingMessages();
-    }
 
-    public Map<String, Map<String, List<Byte>>> readMessages(){
-        Map<String, Map<String, List<Byte>>> messages = new HashMap<>();
-        for (ConnectionManager connectionManager: connections){
-            messages.put(connectionManager.getIp(), getIncomingMessages(connectionManager));
+    public void readMessages(){
+        for (Map.Entry<String, List<Byte>> entry : messages.getIncomingMessages().entrySet()) {
+            System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        return messages;
     }
 
     public List<ConnectionManager> getConnections() {
