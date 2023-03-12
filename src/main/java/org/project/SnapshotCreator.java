@@ -4,20 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class SnapshotCreator
 {
     static int serverPort;
     //todo:non usiamo piu i serializable
-    private ArrayList<Serializable> contextObjects;
+    private ArrayList<Object> contextObjects;
     private MessageBuffer messages;
     private List<String> connectionNames;
     private transient Map<String, ConnectionManager> nameToConnection;
@@ -28,8 +24,7 @@ public class SnapshotCreator
     private transient Map<String, Boolean> snapshotArrivedFrom;
     private Map<String, List<Byte>> savedMessages;
 
-    //todo: news da Valentina
-    public SnapshotCreator(Serializable mainObject, int serverPort) throws IOException
+    public SnapshotCreator(Object mainObject, int serverPort) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
@@ -73,7 +68,7 @@ public class SnapshotCreator
 
         //Objects
         in = new BufferedReader(new FileReader("Objects.json"));
-        this.contextObjects = gson.fromJson(in, new TypeToken<ArrayList<Serializable>>(){}.getType());
+        this.contextObjects = gson.fromJson(in, new TypeToken<ArrayList<Object>>(){}.getType());
 
         //Connections
         in = new BufferedReader(new FileReader("Connections.json"));
@@ -92,8 +87,7 @@ public class SnapshotCreator
         }
 
         //Messages
-
-        in = new BufferedReader(new FileReader("Connections.json"));
+        in = new BufferedReader(new FileReader("Messages.json"));
         this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, List<Byte>>>(){}.getType());
 
     }
@@ -133,7 +127,7 @@ public class SnapshotCreator
         return new MyOutputStream(this, nameToConnection.get(name).getOutputStream());
     }
 
-    synchronized public void addEntityToContext(Serializable newObject)
+    synchronized public void addEntityToContext(Object newObject)
     {
         contextObjects.add(newObject);
     }
@@ -160,10 +154,11 @@ public class SnapshotCreator
 
     synchronized void snapshotMessageArrived(String connectionName)
     {
+        //todo per Francio: controlla te lo abbiamo modificato
         snapshotArrivedFrom.replace(connectionName, true);
-        boolean snapshotEndedFlag = false;
+        boolean snapshotEndedFlag = true;
         for(Boolean arrived : snapshotArrivedFrom.values())
-            snapshotEndedFlag = snapshotting && arrived;
+            snapshotEndedFlag = snapshotEndedFlag && snapshotting && arrived;
         if(snapshotEndedFlag)
             stopSnapshot();
     }
@@ -181,6 +176,7 @@ public class SnapshotCreator
         SerializeConnections();
         System.out.println(">> Snapshot ended <<");
     }
+
 
     synchronized void waitUntilSnapshotEnded() throws InterruptedException
     {
@@ -295,9 +291,10 @@ public class SnapshotCreator
 
 
     public void readMessages(){
-        for (Map.Entry<String, List<Byte>> entry : messages.getIncomingMessages().entrySet()) {
-            System.out.println(entry.getKey() + ":" + entry.getValue());
-        }
+        //for (Map.Entry<String, List<Byte>> entry : messages.getIncomingMessages().entrySet()) {
+            //            System.out.println(entry.getKey() + ":" + entry.getValue());
+        //}
+            System.out.println(messages.getIncomingMessages());
     }
 
     public List<ConnectionManager> getConnections() {

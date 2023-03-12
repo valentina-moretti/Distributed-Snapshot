@@ -13,7 +13,6 @@ public class Controller implements Serializable{
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
-    //todo: valentina chiede: ci sta il singleton?
     private static Controller instance;
     public static Controller getInstance(){
         if (instance == null){
@@ -62,6 +61,7 @@ public class Controller implements Serializable{
                     System.out.println("Message: ");
                     s = console.readLine();
                     out.println(s);
+                    //todo come si danno ordini regalo animale
 
                 }
                 else if (s.equals("read")){
@@ -70,6 +70,7 @@ public class Controller implements Serializable{
                 else if (s.equals("ip")){
                     System.out.println("Your IP: " + InetAddress.getLocalHost());
                 }
+                // per debug
                 else if (s.equals("serialize")){
                     System.out.println("Serialization");
                     Serialize();

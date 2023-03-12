@@ -9,7 +9,7 @@ class MessageBuffer
     static final Byte[] snapshotMessage =
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
-    private final Map<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
+    private final HashMap<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
     private final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
@@ -64,6 +64,7 @@ class MessageBuffer
      * @param name the name of the connection of which we want to check the snapshot message presence
      * @return the position of the snapshot message in the incomingMessages or -1 if the message is not present
      */
+    //todo: cerco prima un 255 e poi gli altri? perchè?
     private int checkSnapshotMessage(String name)
     {
         for(int i=0; i <= incomingMessages.get(name).size()-snapshotMessage.length; i++)
