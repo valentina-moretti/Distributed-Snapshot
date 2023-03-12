@@ -23,7 +23,7 @@ class MessageBuffer
         incomingMessages.put(name, new ArrayList<>());
     }
 
-    synchronized void addMessage(String name, List<Byte> message)
+    synchronized void addMessage(String name, ArrayList<Byte> message)
     {
         incomingMessages.get(name).addAll(message);
     }
@@ -79,7 +79,7 @@ class MessageBuffer
         return -1;
     }
 
-    public Map<String, ArrayList<Byte>> getIncomingMessages() {
+    public HashMap<String, ArrayList<Byte>> getIncomingMessages() {
         return incomingMessages;
     }
 }

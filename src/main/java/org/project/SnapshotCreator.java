@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
@@ -134,7 +135,9 @@ public class SnapshotCreator
 
     synchronized public void startSnapshot()
     {
-        saveState();
+        System.out.println(">> Snapshot started. <<");
+        SerializeObjects();
+        SerializeConnections();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
         for(String connectionName : nameToConnection.keySet())
@@ -241,36 +244,6 @@ public class SnapshotCreator
 
     }
 
-
-    public void saveState(){
-        String filename = "SnapCreator.json";
-        String saveObjects = "Objects.json";
-
-
-        Gson gson = new Gson();
-
-        // Serialization
-        try {
-
-            // Saving of SnapCreator in a file
-            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.json"));
-
-            // Method for serialization of object
-            out.write(jsonConverter.fromObjectToJson(this));
-
-
-
-            out.close();
-
-            System.out.println("Object has been serialized\n");
-
-        }
-
-        catch (IOException ex) {
-            System.out.println("IOException is caught");
-        }
-    }
-
     public SnapshotCreator snapshotDeserialization(){
         SnapshotCreator sc = null;
 
@@ -291,9 +264,16 @@ public class SnapshotCreator
 
 
     public void readMessages(){
-        messages.getIncomingMessages().entrySet().forEach(entry -> {
-            System.out.println(entry.getKey() + " " + entry.getValue());
-        });
+        HashMap<String, ArrayList<Byte>> m = messages.getIncomingMessages();
+        for (String name: m.keySet()) {
+            System.out.println(name + " :");
+            ArrayList bytes = m.get(name);
+            byte b[] = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++)
+                b[i] = (byte) bytes.get(i);
+            String s = new String(b, StandardCharsets.UTF_8);
+            System.out.println(s);
+        }
     }
 
     public List<ConnectionManager> getConnections() {
