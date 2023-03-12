@@ -24,8 +24,9 @@ public class SnapshotCreator
     private boolean snapshotting;
     private transient Map<String, Boolean> snapshotArrivedFrom;
     private Map<String, ArrayList<Byte>> savedMessages;
+    static int identifier;
 
-    public SnapshotCreator(Object mainObject, int serverPort) throws IOException
+    public SnapshotCreator(Object mainObject, int id, int serverPort) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
@@ -38,8 +39,10 @@ public class SnapshotCreator
         connectionNames = new ArrayList<>();
         contextObjects = new ArrayList<>();
         savedMessages = new HashMap<>();
+        identifier= id;
 
-        File file=new File("Objects.json");
+
+        File file=new File("Objects"+identifier+".json");
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0)
         {
@@ -62,17 +65,18 @@ public class SnapshotCreator
     void Recover() throws IOException {
         Gson gson = new Gson();
 
+
         //Port
-        BufferedReader in = new BufferedReader(new FileReader("Port.json"));
+        BufferedReader in = new BufferedReader(new FileReader("Port"+identifier+".json"));
         SnapshotCreator.serverPort = gson.fromJson(in, Integer.class);
 
 
         //Objects
-        in = new BufferedReader(new FileReader("Objects.json"));
+        in = new BufferedReader(new FileReader("Objects"+identifier+".json"));
         this.contextObjects = gson.fromJson(in, new TypeToken<ArrayList<Object>>(){}.getType());
 
         //Connections
-        in = new BufferedReader(new FileReader("Connections.json"));
+        in = new BufferedReader(new FileReader("Connections"+identifier+".json"));
         ArrayList<String> oldConnections = gson.fromJson(in, new TypeToken<ArrayList<String>>(){}.getType());
 
         for (String connection:
@@ -88,7 +92,7 @@ public class SnapshotCreator
         }
 
         //Messages
-        in = new BufferedReader(new FileReader("Messages.json"));
+        in = new BufferedReader(new FileReader("Messages"+identifier+".json"));
         this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, ArrayList<Byte>>>(){}.getType());
 
     }
@@ -195,7 +199,7 @@ public class SnapshotCreator
         Gson gson = new Gson();
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Messages.json"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Messages"+identifier+".json"));
             out.write(gson.toJson(savedMessages));
             out.close();
         } catch (IOException e) {
@@ -208,7 +212,7 @@ public class SnapshotCreator
         Gson gson = new Gson();
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Objects.json"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Objects"+identifier+".json"));
             out.write(gson.toJson(contextObjects));
             out.close();
         } catch (IOException e) {
@@ -227,7 +231,7 @@ public class SnapshotCreator
 
         // Method for serialization of object
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Connections.json"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Connections"+identifier+".json"));
             out.write(gson.toJson(conn));
             out.close();
         } catch (IOException e) {
@@ -235,7 +239,7 @@ public class SnapshotCreator
         }
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Port.json"));
+            BufferedWriter out = new BufferedWriter(new FileWriter("Port"+identifier+".json"));
             out.write(gson.toJson(serverPort));
             out.close();
         } catch (IOException e) {
@@ -251,7 +255,7 @@ public class SnapshotCreator
 
 
             // Method for deserialization of object
-            sc = jsonConverter.fromJsonFileToObject("SnapCreator.json");
+            sc = jsonConverter.fromJsonFileToObject("SnapCreator"+identifier+".json");
             System.out.println("Object has been deserialized\n");
 
 

@@ -2,12 +2,12 @@ package org.application;
 
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.project.SnapshotCreator;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Serializable;
+import java.io.*;
+import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Scanner;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -16,38 +16,78 @@ import com.google.gson.JsonSyntaxException;
 
 public class Main {
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         Controller controller = Controller.getInstance();
-        int serverPort;
+        Gson gson = new Gson();
+
+        //identifier
+        int identifier;
         if (args.length == 0) {
             Scanner s = new Scanner(System.in);
-            System.out.println("Port: ");
-            try{
-                Integer p = s.nextInt();
-                serverPort = p;}
-            catch(Exception e) {serverPort = 35002;}
+            System.out.println("Identifier: ");
+            try {
+                Integer i = s.nextInt();
+                identifier = i;
+            } catch (Exception e) {
+                identifier = 0;
+            }
 
         } else {
-            serverPort = Integer.parseInt(args[0]);
+            identifier = Integer.parseInt(args[0]);
         }
-        System.out.println(serverPort);
-        controller.setServerPort(serverPort);
+        System.out.println(identifier);
+        controller.setIdentifier(identifier);
+        //end identifier
 
-        Thread controllerThread = new Thread() {
-            public void run() {
-                controller.run();
+
+
+
+        File file = new File("Objects"+identifier+".json");
+        //if the file do not exist: is the first time I'm creating it
+        if (file.length() == 0) {
+            //server port
+            int serverPort;
+            if (args.length == 0) {
+                Scanner s = new Scanner(System.in);
+                System.out.println("Port: ");
+                try {
+                    Integer p = s.nextInt();
+                    serverPort = p;
+                } catch (Exception e) {
+                    serverPort = 35002+identifier;
+                }
+
+            } else {
+                serverPort = Integer.parseInt(args[0]);
             }
-        };
-        controllerThread.start();
-        Gson gson = new Gson();
+            System.out.println(serverPort);
+            controller.setServerPort(serverPort);
+            //end server port
+            Thread controllerThread = new Thread() {
+                public void run() {
+                    controller.run();
+                }
+            };
+            controllerThread.start();
+
+        } else {
+
+            //I'm recovering
+            System.out.println("Recovering.");
+            try {
+                controller.recover();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Recovering completed.");
+
+        }
+
         Farm f = controller.getFarm();
         f.addAnimal(new Animal("gatto"));
 
         System.out.println(gson.toJson(controller));
 
 
-
     }
-
-
 }
