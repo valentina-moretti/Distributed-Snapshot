@@ -267,17 +267,19 @@ public class SnapshotCreator
     }
 
 
-    public void readMessages(){
+    public String readMessages(){
         HashMap<String, ArrayList<Byte>> m = messages.getIncomingMessages();
+        String s=null;
         for (String name: m.keySet()) {
             System.out.println(name + " :");
             ArrayList bytes = m.get(name);
             byte b[] = new byte[bytes.size()];
             for (int i = 0; i < bytes.size(); i++)
                 b[i] = (byte) bytes.get(i);
-            String s = new String(b, StandardCharsets.UTF_8);
+            s = new String(b, StandardCharsets.UTF_8);
             System.out.println(s);
         }
+        return s;
     }
 
     public List<ConnectionManager> getConnections() {

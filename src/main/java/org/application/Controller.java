@@ -40,6 +40,7 @@ public class Controller implements Serializable {
         }
         String s = "";
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
+        //todo: s non puo essere ancora quit
         while (!s.equals("quit")) {
             System.out.println("> ");
             try {
@@ -58,20 +59,26 @@ public class Controller implements Serializable {
 
                 } else if (s.equals("connections")) {
                     System.out.println(sc.getNameToConnection());
-                } else if (s.equals("write")) {
+                } else if (s.equals("give animal")) {
                     System.out.println("Select connection from: ");
                     System.out.println(sc.getNameToConnection());
                     System.out.println("/ip-port: ");
                     s = console.readLine();
                     OutputStream outputStream = sc.getOutputStream(s);
                     PrintWriter out = new PrintWriter(outputStream, true);
-                    System.out.println("Message: ");
+                    System.out.println("Which animal do you want to donate? ");
                     s = console.readLine();
-                    out.println(s);
+                    out.println("Add animal "+s);
+
                     //todo come si danno ordini regalo animale
 
                 } else if (s.equals("read")) {
-                    sc.readMessages();
+                    s= sc.readMessages();
+                    if(s.length()>11) {
+                        if (s.substring(0, 11).equals("Add animal ")) {
+                            getFarm().addAnimal(new Animal(s.substring(11, s.length()-11)));
+                        }
+                    }
                 } else if (s.equals("ip")) {
                     System.out.println("Your IP: " + InetAddress.getLocalHost());
                 }
@@ -121,35 +128,29 @@ public class Controller implements Serializable {
 
         //Port Recovery
         BufferedReader in = new BufferedReader(new FileReader("Port"+identifier+".json"));
-        serverPort = gson.fromJson(in, Integer.class);
+        this.serverPort = gson.fromJson(in, Integer.class);
 
         //Objects Recovery
         in = new BufferedReader(new FileReader("Objects"+identifier+".json"));
         this.objectList = gson.fromJson(in, new TypeToken<ArrayList<Object>>() {
         }.getType());
 
-        //Connections Recovery
-        in = new BufferedReader(new FileReader("Connections"+identifier+".json"));
-        ArrayList<String> oldConnections = gson.fromJson(in, new TypeToken<ArrayList<String>>() {
-        }.getType());
 
-        run();
 
-        for (String connection :
-                oldConnections) {
-            connection = connection.substring(1);
-            String[] ipAndPort = connection.split("-");
-
-            try {
-                sc.connect_to(InetAddress.getByName(ipAndPort[0]), Integer.valueOf(ipAndPort[1]));
-            } catch (Exception e) {
-                e.printStackTrace();
+        Thread controllerThread = new Thread() {
+            public void run() {
+                this.run();
             }
-        }
+        };
+        controllerThread.start();
         //todo: there is no need of message recovery, right?
     }
 
     public void setIdentifier(int identifier) {
         this.identifier = identifier;
+    }
+
+    public void setObjectList(ArrayList<Object> objectList) {
+        this.objectList = objectList;
     }
 }
