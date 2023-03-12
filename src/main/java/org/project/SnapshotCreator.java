@@ -22,7 +22,7 @@ public class SnapshotCreator
     private transient JsonConverter jsonConverter;
     private boolean snapshotting;
     private transient Map<String, Boolean> snapshotArrivedFrom;
-    private Map<String, List<Byte>> savedMessages;
+    private Map<String, ArrayList<Byte>> savedMessages;
 
     public SnapshotCreator(Object mainObject, int serverPort) throws IOException
     // there should be another parameter: the function to
@@ -88,7 +88,7 @@ public class SnapshotCreator
 
         //Messages
         in = new BufferedReader(new FileReader("Messages.json"));
-        this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, List<Byte>>>(){}.getType());
+        this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, ArrayList<Byte>>>(){}.getType());
 
     }
 
@@ -163,7 +163,7 @@ public class SnapshotCreator
             stopSnapshot();
     }
 
-    synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
+    synchronized void messageDuringSnapshot(String connectionName, ArrayList<Byte> message)
     {
         savedMessages.get(connectionName).addAll(message);
     }
@@ -291,10 +291,9 @@ public class SnapshotCreator
 
 
     public void readMessages(){
-        //for (Map.Entry<String, List<Byte>> entry : messages.getIncomingMessages().entrySet()) {
-            //            System.out.println(entry.getKey() + ":" + entry.getValue());
-        //}
-            System.out.println(messages.getIncomingMessages());
+        messages.getIncomingMessages().entrySet().forEach(entry -> {
+            System.out.println(entry.getKey() + " " + entry.getValue());
+        });
     }
 
     public List<ConnectionManager> getConnections() {
