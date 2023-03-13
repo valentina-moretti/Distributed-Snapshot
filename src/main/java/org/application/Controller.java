@@ -2,17 +2,21 @@ package org.application;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 import org.project.SnapshotCreator;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class Controller implements Serializable {
-    private ArrayList<Object> objectList;
+    private List<Object> objectList;
+    private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
     private static Controller instance;
@@ -27,9 +31,8 @@ public class Controller implements Serializable {
 
     private Controller() {
         instance = null;
-        this.objectList = new ArrayList<Object>();
-        Farm farm = new Farm(this);
-        objectList.add(farm);
+        this.objectList = new ArrayList<>();
+        this.farm = new Farm(this);
     }
 
     public void run() {
@@ -95,8 +98,13 @@ public class Controller implements Serializable {
         }
     }
 
-    public Farm getFarm() {
-        return (Farm) objectList.get(0);
+    public Farm getFarm(){
+        return this.farm;
+    }
+
+    public Farm recoverFarm(List<Object> list) {
+        System.out.println(list);
+        return ((Controller) list.get(0)).getFarm();
     }
 
     public int getServerPort() {
@@ -131,14 +139,20 @@ public class Controller implements Serializable {
         this.serverPort = gson.fromJson(in, Integer.class);
 
         //Objects Recovery
-        in = new BufferedReader(new FileReader("Objects"+identifier+".json"));
-        this.objectList = gson.fromJson(in, new TypeToken<ArrayList<Object>>() {
-        }.getType());
+
+        JsonReader reader = new JsonReader(new FileReader("Objects"+identifier+".json"));
+        List<Object> list = gson.fromJson(reader, new TypeToken<List<Object>>(){}.getType());
+        recoverFarm(list);
 
 
 
         Thread controllerThread = new Thread() {
             public void run() {
+                try {
+                    wait(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 this.run();
             }
         };
