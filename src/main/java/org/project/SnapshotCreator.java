@@ -1,119 +1,79 @@
 package org.project;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class SnapshotCreator
 {
-    static int serverPort;
+    static final int serverPort=55831;
     //todo:non usiamo piu i serializable
-    private ArrayList<Object> contextObjects;
+    private List<Serializable> contextObjects;
     private MessageBuffer messages;
-    private List<String> connectionNames;
-    private transient Map<String, ConnectionManager> nameToConnection;
-    private transient List<ConnectionManager> connections;
-    private transient ConnectionAccepter connectionAccepter;
-    private transient JsonConverter jsonConverter;
+    private Map<String, ConnectionManager> nameToConnection;
+    private List<ConnectionManager> connections;
+    private ConnectionAccepter connectionAccepter;
+    private JsonConverter jsonConverter;
     private boolean snapshotting;
-    private transient Map<String, Boolean> snapshotArrivedFrom;
-    private Map<String, ArrayList<Byte>> savedMessages;
-    static int identifier;
+    private Map<String, Boolean> snapshotArrivedFrom;
+    private Map<String, List<Byte>> savedMessages;
 
-    public SnapshotCreator(Object mainObject, int id, int serverPort) throws IOException
+    //todo: news da Valentina
+    public SnapshotCreator(Serializable mainObject) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
-        snapshotting = false;
-        snapshotArrivedFrom = new HashMap<>();
-        jsonConverter= new JsonConverter();
-        messages = new MessageBuffer(this);
-        nameToConnection = new HashMap<>();
-        connections = new ArrayList<>();
-        connectionNames = new ArrayList<>();
-        contextObjects = new ArrayList<>();
-        savedMessages = new HashMap<>();
-        identifier= id;
-
-
-        File file=new File("Objects"+identifier+".json");
+        File file=new File("SnapCreator.txt");
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0)
         {
-            SnapshotCreator.serverPort = serverPort;
+            contextObjects = new ArrayList<>();
             contextObjects.add(mainObject);
+            messages = new MessageBuffer(this);
+            nameToConnection = new HashMap<>();
+            connections = new ArrayList<>();
+            connectionAccepter = new ConnectionAccepter(this);
+            connectionAccepter.start();
+            snapshotting = false;
+            snapshotArrivedFrom = new HashMap<>();
+            savedMessages = new HashMap<>();
+            jsonConverter= new JsonConverter();
         }
-        else {
+        else
+        {
             //I'm recovering
-            System.out.println("Recovering.");
-            Recover();
-            System.out.println("Recovering completed.");
+            SnapshotCreator snapshotCreator_recovered = snapshotDeserialization();
+            snapshotCreator_recovered.connectionAccepter.start();
+            this.connections = snapshotCreator_recovered.connections;
+            this.savedMessages = snapshotCreator_recovered.savedMessages;
+            this.nameToConnection = snapshotCreator_recovered.nameToConnection;
 
         }
-        connectionAccepter = new ConnectionAccepter(this);
-        connectionAccepter.start();
-
-
-    }
-
-    void Recover() throws IOException {
-        Gson gson = new Gson();
-
-
-        //Port
-        BufferedReader in = new BufferedReader(new FileReader("Port"+identifier+".json"));
-        SnapshotCreator.serverPort = gson.fromJson(in, Integer.class);
-
-
-        //Objects
-        in = new BufferedReader(new FileReader("Objects"+identifier+".json"));
-        this.contextObjects = gson.fromJson(in, new TypeToken<ArrayList<Object>>(){}.getType());
-
-        //Connections
-        in = new BufferedReader(new FileReader("Connections"+identifier+".json"));
-        ArrayList<String> oldConnections = gson.fromJson(in, new TypeToken<ArrayList<String>>(){}.getType());
-
-        for (String connection:
-                oldConnections) {
-            connection = connection.substring(1);
-            String[] ipAndPort = connection.split("-");
-            try{
-                connect_to(InetAddress.getByName(ipAndPort[0]), Integer.valueOf(ipAndPort[1]));
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-
-        }
-
-        //Messages
-        in = new BufferedReader(new FileReader("Messages"+identifier+".json"));
-        this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, ArrayList<Byte>>>(){}.getType());
 
     }
 
 
     synchronized void connectionAccepted(Socket connection)
     {
-        String name = connection.getInetAddress().toString() + "-" + connection.getPort();
+        String name = connection.getInetAddress().toString();
         ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
-        connectionNames.add(name);
         connections.add(newConnectionM);
         messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
     }
 
-    synchronized public String connect_to(InetAddress address, Integer port) throws IOException
+    synchronized public String connect_to(InetAddress address) throws IOException
     {
-        String name = address.toString() + "-" + port;
-        Socket socket = new Socket(address, port);
-        connectionNames.add(name);
+        String name = address.toString();
+        Socket socket = new Socket(address, serverPort);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
         messages.addClient(name);
@@ -132,16 +92,14 @@ public class SnapshotCreator
         return new MyOutputStream(this, nameToConnection.get(name).getOutputStream());
     }
 
-    synchronized public void addEntityToContext(Object newObject)
+    synchronized public void addEntityToContext(Serializable newObject)
     {
         contextObjects.add(newObject);
     }
 
-    synchronized public void startSnapshot()
+    synchronized void startSnapshot()
     {
-        System.out.println(">> Snapshot started. <<");
-        SerializeObjects();
-        SerializeConnections();
+        saveState();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
         for(String connectionName : nameToConnection.keySet())
@@ -161,16 +119,15 @@ public class SnapshotCreator
 
     synchronized void snapshotMessageArrived(String connectionName)
     {
-        //todo per Francio: controlla te lo abbiamo modificato
         snapshotArrivedFrom.replace(connectionName, true);
-        boolean snapshotEndedFlag = true;
+        boolean snapshotEndedFlag = false;
         for(Boolean arrived : snapshotArrivedFrom.values())
-            snapshotEndedFlag = snapshotEndedFlag && snapshotting && arrived;
+            snapshotEndedFlag = snapshotting && arrived;
         if(snapshotEndedFlag)
             stopSnapshot();
     }
 
-    synchronized void messageDuringSnapshot(String connectionName, ArrayList<Byte> message)
+    synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
     {
         savedMessages.get(connectionName).addAll(message);
     }
@@ -179,11 +136,8 @@ public class SnapshotCreator
     {
         snapshotting = false;
         notifyAll();
-        SerializeMessages();
-        SerializeConnections();
-        System.out.println(">> Snapshot ended <<");
+        //TODO: salvo tutti i messaggi e lo stato nello stesso file
     }
-
 
     synchronized void waitUntilSnapshotEnded() throws InterruptedException
     {
@@ -195,57 +149,40 @@ public class SnapshotCreator
         return snapshotting;
     }
 
-    public void SerializeMessages(){
+
+
+
+
+
+
+
+
+
+    public void saveState(){
+        String filename = "SnapCreator.txt";
+        String saveObjects = "Objects.txt";
+
+
         Gson gson = new Gson();
 
+        // Serialization
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Messages"+identifier+".json"));
-            out.write(gson.toJson(savedMessages));
+
+            // Saving of SnapCreator in a file
+            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.txt"));
+
+            // Method for serialization of object
+            out.write(jsonConverter.fromObjectToJson(this));
+
             out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            System.out.println("Object has been serialized\n");
+
         }
 
-    }
-
-    public void SerializeObjects(){
-        Gson gson = new Gson();
-
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Objects"+identifier+".json"));
-            out.write(gson.toJson(contextObjects));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        catch (IOException ex) {
+            System.out.println("IOException is caught");
         }
-
-    }
-
-    public void SerializeConnections(){
-        Gson gson = new Gson();
-        ArrayList<String> conn = new ArrayList<>();
-        for (ConnectionManager connectionManager :
-                connections) {
-            conn.add(connectionManager.getIp());
-        }
-
-        // Method for serialization of object
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Connections"+identifier+".json"));
-            out.write(gson.toJson(conn));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Port"+identifier+".json"));
-            out.write(gson.toJson(serverPort));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
     public SnapshotCreator snapshotDeserialization(){
@@ -254,37 +191,11 @@ public class SnapshotCreator
         // Deserialization
 
 
-            // Method for deserialization of object
-            sc = jsonConverter.fromJsonFileToObject("SnapCreator"+identifier+".json");
-            System.out.println("Object has been deserialized\n");
+        // Method for deserialization of object
+        sc = jsonConverter.fromJsonFileToObject("SnapCreator.txt");
+        System.out.println("Object has been deserialized\n");
 
 
         return sc;
     }
-
-    public Map<String, ConnectionManager> getNameToConnection() {
-        return nameToConnection;
-    }
-
-
-    public String readMessages(){
-        HashMap<String, ArrayList<Byte>> m = messages.getIncomingMessages();
-        String s=null;
-        for (String name: m.keySet()) {
-            System.out.println(name + " :");
-            ArrayList bytes = m.get(name);
-            byte b[] = new byte[bytes.size()];
-            for (int i = 0; i < bytes.size(); i++)
-                b[i] = (byte) bytes.get(i);
-            s = new String(b, StandardCharsets.UTF_8);
-            System.out.println(s);
-        }
-        return s;
-    }
-
-    public List<ConnectionManager> getConnections() {
-        return connections;
-    }
-
-
 }

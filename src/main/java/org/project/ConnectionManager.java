@@ -38,7 +38,7 @@ class ConnectionManager extends Thread
         while (socket.getInputStream().available()!=0)
             readMessage.add((byte) socket.getInputStream().read());
 
-        buffer.addMessage(name, (ArrayList<Byte>) readMessage);
+        buffer.addMessage(name, readMessage);
     }
 
     synchronized OutputStream getOutputStream() throws IOException

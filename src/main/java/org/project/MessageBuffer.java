@@ -9,7 +9,7 @@ class MessageBuffer
     static final Byte[] snapshotMessage =
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
-    private final HashMap<String, ArrayList<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
+    private final Map<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
     private final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
@@ -23,7 +23,7 @@ class MessageBuffer
         incomingMessages.put(name, new ArrayList<>());
     }
 
-    synchronized void addMessage(String name, ArrayList<Byte> message)
+    synchronized void addMessage(String name, List<Byte> message)
     {
         incomingMessages.get(name).addAll(message);
     }
@@ -79,7 +79,7 @@ class MessageBuffer
         return -1;
     }
 
-    public HashMap<String, ArrayList<Byte>> getIncomingMessages() {
+    public Map<String, List<Byte>> getIncomingMessages() {
         return incomingMessages;
     }
 }
