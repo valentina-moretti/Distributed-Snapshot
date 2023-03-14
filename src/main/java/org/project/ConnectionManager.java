@@ -1,8 +1,8 @@
 package org.project;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,11 +46,8 @@ class ConnectionManager extends Thread
         return socket.getOutputStream();
     }
 
-    public MessageBuffer getBuffer() {
-        return buffer;
-    }
-
-    public String getIp() {
-        return name;
+    synchronized InetAddress getInetAddress()
+    {
+        return socket.getInetAddress();
     }
 }

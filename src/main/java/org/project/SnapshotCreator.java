@@ -1,7 +1,5 @@
 package org.project;
 
-import com.google.gson.Gson;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -11,25 +9,37 @@ import java.util.List;
 import java.util.Map;
 
 
-public class SnapshotCreator
+public class SnapshotCreator implements Serializable
 {
+    @Serial private static final long serialVersionUID = 1032L;
     static final int serverPort=55831;
-    //todo:non usiamo piu i serializable
-    private List<Serializable> contextObjects;
-    private MessageBuffer messages;
-    private Map<String, ConnectionManager> nameToConnection;
-    private List<ConnectionManager> connections;
-    private ConnectionAccepter connectionAccepter;
-    private JsonConverter jsonConverter;
-    private boolean snapshotting;
-    private Map<String, Boolean> snapshotArrivedFrom;
-    private Map<String, List<Byte>> savedMessages;
+    private final List<Serializable> contextObjects;
+    private transient MessageBuffer messages;
+    private transient Map<String, ConnectionManager> nameToConnection;
+    private transient List<ConnectionManager> connections;
+    private transient ConnectionAccepter connectionAccepter;
+    private transient boolean snapshotting;
+    private transient Map<String, Boolean> snapshotArrivedFrom;
+    private transient Map<String, List<Byte>> savedMessages;
 
     //todo: news da Valentina
     public SnapshotCreator(Serializable mainObject) throws IOException
-    // there should be another parameter: the function to
-    // be executed when reloading from a previous snapshot
+    // TODO: there should be another parameter: the function to
+    //  be executed when reloading from a previous snapshot
     {
+        contextObjects = new ArrayList<>();
+        contextObjects.add(mainObject);
+        messages = new MessageBuffer(this);
+        nameToConnection = new HashMap<>();
+        connections = new ArrayList<>();
+        connectionAccepter = new ConnectionAccepter(this);
+        connectionAccepter.start();
+        snapshotting = false;
+        snapshotArrivedFrom = new HashMap<>();
+        savedMessages = new HashMap<>();
+
+        //TODO: controllo recovery (l'if di questo costruttore)
+        /*
         File file=new File("SnapCreator.txt");
         //if the file do not exist: is the first time I'm creating it
         if(file.length()==0)
@@ -44,7 +54,6 @@ public class SnapshotCreator
             snapshotting = false;
             snapshotArrivedFrom = new HashMap<>();
             savedMessages = new HashMap<>();
-            jsonConverter= new JsonConverter();
         }
         else
         {
@@ -56,7 +65,7 @@ public class SnapshotCreator
             this.nameToConnection = snapshotCreator_recovered.nameToConnection;
 
         }
-
+        */
     }
 
 
@@ -144,58 +153,69 @@ public class SnapshotCreator
         while (isSnapshotting())
             wait();
     }
+
     synchronized boolean isSnapshotting()
     {
         return snapshotting;
     }
 
-
-
-
-
-
-
-
-
-
-    public void saveState(){
-        String filename = "SnapCreator.txt";
-        String saveObjects = "Objects.txt";
-
-
-        Gson gson = new Gson();
-
-        // Serialization
+    synchronized void saveState()
+    {
         try {
+            File snapshotFile = new File("lastSnapshot.txt");
+            if(!snapshotFile.createNewFile())
+            {
+                if(!snapshotFile.delete())
+                    throw new RuntimeException("Failed to create snapshotFile");
+                if(!snapshotFile.createNewFile())
+                    throw new RuntimeException("Failed to create snapshotFile");
+            }
+            FileOutputStream file = new FileOutputStream(snapshotFile);
+            ObjectOutputStream fileOut = new ObjectOutputStream(file);
 
-            // Saving of SnapCreator in a file
-            BufferedWriter out = new BufferedWriter(new FileWriter("SnapCreator.txt"));
+            fileOut.writeObject(this);
 
-            // Method for serialization of object
-            out.write(jsonConverter.fromObjectToJson(this));
-
-            out.close();
-
-            System.out.println("Object has been serialized\n");
-
-        }
-
-        catch (IOException ex) {
-            System.out.println("IOException is caught");
-        }
+            fileOut.close();
+            file.close();
+        }catch (IOException e) { throw new RuntimeException("Error in creating snapshot file!"); }
     }
 
-    public SnapshotCreator snapshotDeserialization(){
+    public SnapshotCreator snapshotDeserialization()
+    {
         SnapshotCreator sc = null;
+    }
 
-        // Deserialization
+    @Serial
+    private synchronized void writeObject(ObjectOutputStream oos) throws IOException
+    {
+        oos.defaultWriteObject();
+        Map<String, InetAddress> nameToIP = new HashMap<>();
+        for(String name: nameToConnection.keySet())
+            nameToIP.put(name, nameToConnection.get(name).getInetAddress());
+        oos.writeObject(nameToIP);
+    }
 
-
-        // Method for deserialization of object
-        sc = jsonConverter.fromJsonFileToObject("SnapCreator.txt");
-        System.out.println("Object has been deserialized\n");
-
-
-        return sc;
+    @Serial
+    private synchronized void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException
+    {
+        ois.defaultReadObject();
+        messages = new MessageBuffer(this);
+        nameToConnection = new HashMap<>();
+        connections = new ArrayList<>();
+        connectionAccepter = new ConnectionAccepter(this);
+        connectionAccepter.start();
+        snapshotting = false;
+        snapshotArrivedFrom = new HashMap<>();
+        savedMessages = new HashMap<>();
+        Map<String, InetAddress> nameToIP = (HashMap<String, InetAddress>) ois.readObject();
+        for(String name: nameToIP.keySet())
+        {
+            Socket socket = new Socket(nameToIP.get(name), serverPort);
+            ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+            connections.add(newConnectionM);
+            messages.addClient(name);
+            nameToConnection.put(name, newConnectionM);
+            newConnectionM.start();
+        }
     }
 }

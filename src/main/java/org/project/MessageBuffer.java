@@ -7,9 +7,9 @@ import java.util.*;
 class MessageBuffer
 {
     static final Byte[] snapshotMessage =
-            {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
-             (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
-    private final Map<String, List<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
+            {(byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255,
+             (byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255};
+    private final Map<String, List<Byte>> incomingMessages;
     private final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
@@ -77,9 +77,5 @@ class MessageBuffer
             }
         }
         return -1;
-    }
-
-    public Map<String, List<Byte>> getIncomingMessages() {
-        return incomingMessages;
     }
 }
