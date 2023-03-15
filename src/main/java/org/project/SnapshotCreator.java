@@ -67,6 +67,13 @@ public class SnapshotCreator implements Serializable
         return recoveredSystem;
     }
 
+    /**
+     * Constructor of the SnapshotCreator, which will add the main object to the context of the snapshot
+     * (only the objects added to the context will be saved in the state of the program during the snapshot,
+     * see method addEntityToContext)
+     * @param mainObject the main object of your program (the one which is most connected to the other objects)
+     * @throws IOException
+     */
     public SnapshotCreator(Serializable mainObject) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
@@ -84,6 +91,10 @@ public class SnapshotCreator implements Serializable
     }
 
 
+    /**
+     * method used by the ConnectionAccepter when a new connection is accepted by the ServerSocket
+     * @param connection new Socket
+     */
     synchronized void connectionAccepted(Socket connection)
     {
         String name = connection.getInetAddress().toString();
@@ -94,6 +105,14 @@ public class SnapshotCreator implements Serializable
         newConnectionM.start();
     }
 
+    /**
+     * Use this method to connect to other nodes knowing their address; if a new connection is established
+     * without the usage of this method the communication of that connection will not be registered in the
+     * snapshot
+     * @param address
+     * @return a String identifier of the connection created
+     * @throws IOException
+     */
     synchronized public String connect_to(InetAddress address) throws IOException
     {
         String name = address.toString();
@@ -106,21 +125,40 @@ public class SnapshotCreator implements Serializable
         return name;
     }
 
+    /**
+     * getter for the input stream of a specific connection
+     * @param connectionName string identifier of the connection
+     * @return the input stream
+     */
     synchronized public InputStream getInputStream(String connectionName)
     {
         return new MyInputStream(messages, connectionName);
     }
 
-    synchronized public OutputStream getOutputStream(String name) throws IOException
+    /**
+     * getter for the output stream of a specific connection
+     * @param connectionName string identifier of the connection
+     * @return the output stream
+     * @throws IOException
+     */
+    synchronized public OutputStream getOutputStream(String connectionName) throws IOException
     {
-        return new MyOutputStream(this, nameToConnection.get(name).getOutputStream());
+        return new MyOutputStream(this, nameToConnection.get(connectionName).getOutputStream());
     }
 
+    /**
+     * add a serializable object to the context of the snapshot.
+     * Only the objects added to the context will be saved in the state of the program during the snapshot
+     * @param newObject
+     */
     synchronized public void addEntityToContext(Serializable newObject)
     {
         contextObjects.add(newObject);
     }
 
+    /**
+     * Begin the snapshot by saving the state and sending the snapshot message to all other nodes
+     */
     synchronized void startSnapshot()
     {
         saveState();
@@ -141,6 +179,11 @@ public class SnapshotCreator implements Serializable
         }
     }
 
+    /**
+     * Tells the SnapshotCreator that the snapshot message arrived from the connection connectionName.
+     * If the snapshot messages arrived from all the connections the snapshot logic will end
+     * @param connectionName string identifier of the connection
+     */
     synchronized void snapshotMessageArrived(String connectionName)
     {
         snapshotArrivedFrom.replace(connectionName, true);
@@ -151,11 +194,21 @@ public class SnapshotCreator implements Serializable
             stopSnapshot();
     }
 
+    /**
+     * Method used to save all the messages arrived during the snapshot, from a specific connection, as a
+     * list of bytes
+     * @param connectionName string identifier of the connection
+     * @param message
+     */
     synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
     {
         savedMessages.get(connectionName).addAll(message);
     }
 
+    /**
+     * As the state of the program was saved at the beginning of the snapshot, the messages arrived during
+     * the snapshot are saved as well at the end of the snapshot
+     */
     synchronized private void stopSnapshot()
     {
         snapshotting = false;
@@ -180,6 +233,10 @@ public class SnapshotCreator implements Serializable
         savedMessages.clear();
     }
 
+    /**
+     * Suspends the calling thread as long as there is a snapshot running
+     * @throws InterruptedException
+     */
     synchronized void waitUntilSnapshotEnded() throws InterruptedException
     {
         while (isSnapshotting())
@@ -191,7 +248,7 @@ public class SnapshotCreator implements Serializable
         return snapshotting;
     }
 
-    synchronized void saveState()
+    synchronized private void saveState()
     {
         try {
             File snapshotFile = new File("lastSnapshot");

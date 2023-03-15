@@ -18,11 +18,20 @@ class MessageBuffer
         snapshotManager = snapshotCreator;
     }
 
+    /**
+     * Used to add a connection queue of messages to the MessageBuffer
+     * @param name string identifier of the connection
+     */
     synchronized void addClient(String name)
     {
         incomingMessages.put(name, new ArrayList<>());
     }
 
+    /**
+     * add a List of Bytes arrived from a specific connection to the message buffer
+     * @param name identifier of the connection
+     * @param message message arrived from that connection in bytes
+     */
     synchronized void addMessage(String name, List<Byte> message)
     {
         incomingMessages.get(name).addAll(message);
@@ -52,6 +61,7 @@ class MessageBuffer
         {
             if(snapPosition!=-1)
                 snapshotManager.startSnapshot();
+            snapshotManager.snapshotMessageArrived(name);
             snapshotManager.messageDuringSnapshot (name,
                new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
         }

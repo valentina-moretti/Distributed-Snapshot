@@ -37,7 +37,7 @@ class MyInputStream extends InputStream
     }
 
     @Override
-    public void reset() throws IOException
+    public void reset()
     {
         return;
     }
