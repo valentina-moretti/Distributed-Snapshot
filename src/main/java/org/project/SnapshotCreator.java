@@ -22,7 +22,51 @@ public class SnapshotCreator implements Serializable
     private transient Map<String, Boolean> snapshotArrivedFrom;
     private transient Map<String, List<Byte>> savedMessages;
 
-    //todo: news da Valentina
+    /**
+     * @return a SnapshotCreator object reconstructed from the file named "lastSnapshot"
+     * created during the last snapshot
+     * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
+     * snapshot was not found or was corrupted
+     */
+    static public SnapshotCreator snapshotDeserialization() throws FileNotFoundException
+    {
+        SnapshotCreator recoveredSystem = null;
+        Map<String, List<Byte>> messages = null;
+        //TODO: dovrei eseguire il metodo/i metodi che l'applicazione mi ha passato per riavviarla
+        try{
+            File messagesFile = new File("savedMessages");
+            FileInputStream file = new FileInputStream(messagesFile);
+            ObjectInputStream fileIn = new ObjectInputStream(file);
+
+            Object inObj = fileIn.readObject();
+            if(inObj instanceof Map)
+                messages = (Map<String, List<Byte>>) inObj;
+            else
+                throw new ClassNotFoundException("Saved messages file was corrupted");
+
+            fileIn.close();
+            file.close();
+
+
+            messagesFile = new File("lastSnapshot");
+            file = new FileInputStream(messagesFile);
+            fileIn = new ObjectInputStream(file);
+
+            inObj = fileIn.readObject();
+            if(inObj instanceof SnapshotCreator)
+                recoveredSystem = (SnapshotCreator) inObj;
+            else
+                throw new ClassNotFoundException("State file was corrupted");
+
+            fileIn.close();
+            file.close();
+        }catch (IOException | ClassNotFoundException e) {
+            throw new FileNotFoundException("File was corrupted");
+        }
+        synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; }
+        return recoveredSystem;
+    }
+
     public SnapshotCreator(Serializable mainObject) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
@@ -37,35 +81,6 @@ public class SnapshotCreator implements Serializable
         snapshotting = false;
         snapshotArrivedFrom = new HashMap<>();
         savedMessages = new HashMap<>();
-
-        //TODO: controllo recovery (l'if di questo costruttore)
-        /*
-        File file=new File("SnapCreator.txt");
-        //if the file do not exist: is the first time I'm creating it
-        if(file.length()==0)
-        {
-            contextObjects = new ArrayList<>();
-            contextObjects.add(mainObject);
-            messages = new MessageBuffer(this);
-            nameToConnection = new HashMap<>();
-            connections = new ArrayList<>();
-            connectionAccepter = new ConnectionAccepter(this);
-            connectionAccepter.start();
-            snapshotting = false;
-            snapshotArrivedFrom = new HashMap<>();
-            savedMessages = new HashMap<>();
-        }
-        else
-        {
-            //I'm recovering
-            SnapshotCreator snapshotCreator_recovered = snapshotDeserialization();
-            snapshotCreator_recovered.connectionAccepter.start();
-            this.connections = snapshotCreator_recovered.connections;
-            this.savedMessages = snapshotCreator_recovered.savedMessages;
-            this.nameToConnection = snapshotCreator_recovered.nameToConnection;
-
-        }
-        */
     }
 
 
@@ -145,7 +160,24 @@ public class SnapshotCreator implements Serializable
     {
         snapshotting = false;
         notifyAll();
-        //TODO: salvo tutti i messaggi e lo stato nello stesso file
+        try {
+            File messagesFile = new File("savedMessages");
+            if(!messagesFile.createNewFile())
+            {
+                if(!messagesFile.delete())
+                    throw new RuntimeException("Failed to create savedMessages file");
+                if(!messagesFile.createNewFile())
+                    throw new RuntimeException("Failed to create savedMessages file");
+            }
+            FileOutputStream file = new FileOutputStream(messagesFile);
+            ObjectOutputStream fileOut = new ObjectOutputStream(file);
+
+            fileOut.writeObject(savedMessages);
+
+            fileOut.close();
+            file.close();
+        }catch (IOException e) { throw new RuntimeException("Error in creating savedMessages file!"); }
+        savedMessages.clear();
     }
 
     synchronized void waitUntilSnapshotEnded() throws InterruptedException
@@ -162,7 +194,7 @@ public class SnapshotCreator implements Serializable
     synchronized void saveState()
     {
         try {
-            File snapshotFile = new File("lastSnapshot.txt");
+            File snapshotFile = new File("lastSnapshot");
             if(!snapshotFile.createNewFile())
             {
                 if(!snapshotFile.delete())
@@ -178,11 +210,6 @@ public class SnapshotCreator implements Serializable
             fileOut.close();
             file.close();
         }catch (IOException e) { throw new RuntimeException("Error in creating snapshot file!"); }
-    }
-
-    public SnapshotCreator snapshotDeserialization()
-    {
-        SnapshotCreator sc = null;
     }
 
     @Serial
@@ -217,5 +244,7 @@ public class SnapshotCreator implements Serializable
             nameToConnection.put(name, newConnectionM);
             newConnectionM.start();
         }
+        //TODO: devo riconnettermi solo a quelli con cui non ho già una connessione e rifiutare o chiudere
+        // le connessioni da quelli con cui mi sono già connesso
     }
 }
