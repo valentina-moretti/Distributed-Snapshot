@@ -33,6 +33,8 @@ public class SnapshotCreator implements Serializable
         SnapshotCreator recoveredSystem = null;
         Map<String, List<Byte>> messages = null;
         //TODO: dovrei eseguire il metodo/i metodi che l'applicazione mi ha passato per riavviarla
+        // i messaggi salvati li devo mettere nel buffer non in savedMessages
+        // se non ci sono i file lancio FileNotFountException
         try{
             File messagesFile = new File("savedMessages");
             FileInputStream file = new FileInputStream(messagesFile);
@@ -71,10 +73,11 @@ public class SnapshotCreator implements Serializable
      * Constructor of the SnapshotCreator, which will add the main object to the context of the snapshot
      * (only the objects added to the context will be saved in the state of the program during the snapshot,
      * see method addEntityToContext)
-     * @param mainObject the main object of your program (the one which is most connected to the other objects)
+     * @param mainObject the main object of your program (the one which is most connected to the other objects),
+     *                   it must be a thread in order to be executed after the recovery
      * @throws IOException
      */
-    public SnapshotCreator(Serializable mainObject) throws IOException
+    public <T extends Thread & Serializable> SnapshotCreator(T mainObject) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
     {

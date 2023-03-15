@@ -17,77 +17,78 @@ import com.google.gson.JsonSyntaxException;
 public class Main {
 
     public static void main(String[] args) {
-        Controller controller = Controller.getInstance();
-        Gson gson = new Gson();
+        try {
+            SnapshotCreator.snapshotDeserialization();
+        }catch (FileNotFoundException e){
+            Controller controller = Controller.getInstance();
+            Gson gson = new Gson();
 
-        //identifier
-        int identifier;
-        if (args.length == 0) {
-            Scanner s = new Scanner(System.in);
-            System.out.println("Identifier: ");
-            try {
-                Integer i = s.nextInt();
-                identifier = i;
-            } catch (Exception e) {
-                identifier = 0;
-            }
-
-        } else {
-            identifier = Integer.parseInt(args[0]);
-        }
-        System.out.println(identifier);
-        controller.setIdentifier(identifier);
-        //end identifier
-
-
-
-
-        File file = new File("Objects"+identifier+".json");
-        //if the file do not exist: is the first time I'm creating it
-        if (file.length() == 0) {
-            //server port
-            int serverPort;
+            //identifier
+            int identifier;
             if (args.length == 0) {
                 Scanner s = new Scanner(System.in);
-                System.out.println("Port: ");
+                System.out.println("Identifier: ");
                 try {
-                    Integer p = s.nextInt();
-                    serverPort = p;
+                    Integer i = s.nextInt();
+                    identifier = i;
                 } catch (Exception e) {
-                    serverPort = 35002+identifier;
+                    identifier = 0;
                 }
 
             } else {
-                serverPort = Integer.parseInt(args[0]);
+                identifier = Integer.parseInt(args[0]);
             }
-            System.out.println(serverPort);
-            controller.setServerPort(serverPort);
-            //end server port
-            Thread controllerThread = new Thread() {
-                public void run() {
-                    controller.run();
+            System.out.println(identifier);
+            controller.setIdentifier(identifier);
+            //end identifier
+
+
+            File file = new File("Objects" + identifier + ".json");
+            //if the file do not exist: is the first time I'm creating it
+            if (file.length() == 0) {
+                //server port
+                int serverPort;
+                if (args.length == 0) {
+                    Scanner s = new Scanner(System.in);
+                    System.out.println("Port: ");
+                    try {
+                        Integer p = s.nextInt();
+                        serverPort = p;
+                    } catch (Exception e) {
+                        serverPort = 35002 + identifier;
+                    }
+
+                } else {
+                    serverPort = Integer.parseInt(args[0]);
                 }
-            };
-            controllerThread.start();
+                System.out.println(serverPort);
+                controller.setServerPort(serverPort);
+                //end server port
+                Thread controllerThread = new Thread() {
+                    public void run() {
+                        controller.run();
+                    }
+                };
+                controllerThread.start();
 
-        } else {
+            } else {
 
-            //I'm recovering
-            System.out.println("Recovering.");
-            try {
-                controller.recover();
-            } catch (IOException e) {
-                e.printStackTrace();
+                //I'm recovering
+                System.out.println("Recovering.");
+                try {
+                    controller.recover();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("Recovering completed.");
+
             }
-            System.out.println("Recovering completed.");
+
+            Farm f = controller.getFarm();
+            f.addAnimal(new Animal("gatto"));
+
+            System.out.println(gson.toJson(controller));
 
         }
-
-        Farm f = controller.getFarm();
-        f.addAnimal(new Animal("gatto"));
-
-        System.out.println(gson.toJson(controller));
-
-
     }
 }

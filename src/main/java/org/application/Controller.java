@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+//TODO: extend thread
 public class Controller implements Serializable {
     private List<Object> objectList;
     private Farm farm;
