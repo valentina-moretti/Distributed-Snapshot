@@ -138,7 +138,7 @@ public class SnapshotCreator implements Serializable
      * snapshot
      *
      * @param address
-     * @param p
+     * @param port
      * @return a String identifier of the connection created
      * @throws IOException
      */
