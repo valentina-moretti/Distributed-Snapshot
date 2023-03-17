@@ -76,40 +76,24 @@ public class SnapshotCreator
         this.controller.run();
     };
 
-    public SnapshotCreator(Controller mainObject, int id, int serverPort) throws IOException
-    // there should be another parameter: the function to
-    // be executed when reloading from a previous snapshot
+    public SnapshotCreator(Controller controller, int identifier, int serverPort) throws IOException
+    // TODO: there should be another parameter: the function to
+    //  be executed when reloading from a previous snapshot
     {
-        snapshotting = false;
-        snapshotArrivedFrom = new HashMap<>();
-        jsonConverter= new JsonConverter();
+        connectionNames = new ArrayList<>();
+        contextObjects = new ArrayList<>();
+        contextObjects.add(controller);
         messages = new MessageBuffer(this);
         nameToConnection = new HashMap<>();
         connections = new ArrayList<>();
-        connectionNames = new ArrayList<>();
-
-        contextObjects = new ArrayList<>();
-        savedMessages = new HashMap<>();
-        identifier= id;
-
-
-        File file=new File("Objects"+identifier+".json");
-        //if the file do not exist: is the first time I'm creating it
-        if(file.length()==0)
-        {
-            SnapshotCreator.serverPort = serverPort;
-            contextObjects.add(mainObject);
-        }
-        else {
-            //I'm recovering
-            System.out.println("Recovering.");
-            Recover();
-            System.out.println("Recovering completed.");
-
-        }
         connectionAccepter = new ConnectionAccepter(this);
         connectionAccepter.start();
-
+        snapshotting = false;
+        snapshotArrivedFrom = new HashMap<>();
+        savedMessages = new HashMap<String, ArrayList<Byte>>();
+        SnapshotCreator.serverPort = serverPort;
+        SnapshotCreator.identifier = identifier;
+        this.controller = controller;
 
     }
 /*
