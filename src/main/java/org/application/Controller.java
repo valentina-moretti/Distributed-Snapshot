@@ -72,7 +72,7 @@ public class Controller implements Serializable {
 
                 } else if (s.equals("read")) {
                     s= sc.readMessages();
-                    if(s.length()>11) {
+                    if(s!= null && s.length()>11) {
                         if (s.substring(0, 11).equals("Add animal ")) {
                             String animal = s.split("Add animal")[1];
                             this.farm.addAnimal(new Animal(animal));
