@@ -20,9 +20,9 @@ public class Controller implements Serializable {
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
-    private static Controller instance;
+    // private static Controller instance;
     private int identifier;
-
+/*
     public static Controller getInstance() {
         if (instance == null) {
             instance = new Controller();
@@ -30,8 +30,11 @@ public class Controller implements Serializable {
         return instance;
     }
 
-    private Controller() {
-        instance = null;
+ */
+
+    public Controller(int identifier, int serverPort) {
+        this.identifier = identifier;
+        this.serverPort = serverPort;
         this.objectList = new ArrayList<>();
         this.farm = new Farm(this);
     }
@@ -85,13 +88,17 @@ public class Controller implements Serializable {
                     }
                 } else if (s.equals("ip")) {
                     System.out.println("Your IP: " + InetAddress.getLocalHost());
-                }
-                // per debug
-                else if (s.equals("serialize")) {
+                } else if (s.equals("serialize")) {
                     System.out.println("Serialization");
                     Serialize();
                 } else if (s.equals("snap")) {
                     sc.startSnapshot();
+                } else if (s.equals("farm")) {
+                    System.out.println(this.farm);
+                } else if (s.equals("add animal")) {
+                    System.out.println("Animal: ");
+                    s = console.readLine();
+                    this.farm.addAnimal(new Animal(s));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -102,11 +109,13 @@ public class Controller implements Serializable {
     public Farm getFarm(){
         return this.farm;
     }
-
+/*
     public Farm recoverFarm(List<Object> list) {
         System.out.println(list);
         return ((Controller) list.get(0)).getFarm();
     }
+
+ */
 
     public int getServerPort() {
         return serverPort;
@@ -123,15 +132,13 @@ public class Controller implements Serializable {
     // For testing
 
     void Serialize() {
-        sc.SerializeMessages();
-        sc.SerializeConnections();
-        sc.SerializeObjects();
+        sc.saveState();
     }
 
     public SnapshotCreator getSc() {
         return sc;
     }
-
+/*
     void recover() throws IOException {
         Gson gson = new Gson();
 
@@ -161,11 +168,10 @@ public class Controller implements Serializable {
         //todo: there is no need of message recovery, right?
     }
 
+ */
+
     public void setIdentifier(int identifier) {
         this.identifier = identifier;
     }
 
-    public void setObjectList(ArrayList<Object> objectList) {
-        this.objectList = objectList;
-    }
 }

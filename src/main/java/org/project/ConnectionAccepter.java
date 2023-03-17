@@ -18,7 +18,7 @@ class ConnectionAccepter extends Thread
      */
     ConnectionAccepter(SnapshotCreator snap) throws IOException
     {
-        serverSocket = new ServerSocket(SnapshotCreator.serverPort);
+        serverSocket = new ServerSocket(snap.getServerPort());
         snapC = snap;
     }
 

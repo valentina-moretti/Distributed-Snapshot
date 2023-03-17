@@ -34,7 +34,7 @@ class ConnectionManager extends Thread
 
     private void receive() throws IOException
     {
-        List<Byte> readMessage = new ArrayList<>();
+        ArrayList<Byte> readMessage = new ArrayList<>();
         while (socket.getInputStream().available()!=0)
             readMessage.add((byte) socket.getInputStream().read());
 
