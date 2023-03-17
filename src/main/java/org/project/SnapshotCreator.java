@@ -27,6 +27,50 @@ public class SnapshotCreator
     private Map<String, ArrayList<Byte>> savedMessages;
     static int identifier;
 
+    static public SnapshotCreator snapshotDeserialization() throws FileNotFoundException
+    {
+        SnapshotCreator recoveredSystem = null;
+        Map<String, ArrayList<Byte>> messages = null;
+        //TODO: dovrei eseguire il metodo/i metodi che l'applicazione mi ha passato per riavviarla
+        // i messaggi salvati li devo mettere nel buffer non in savedMessages
+        // se non ci sono i file lancio FileNotFountException
+        try{
+            File messagesFile = new File("savedMessages");
+            FileInputStream file = new FileInputStream(messagesFile);
+            ObjectInputStream fileIn = new ObjectInputStream(file);
+
+            Object inObj = fileIn.readObject();
+            if(inObj instanceof Map)
+                messages = (Map<String, ArrayList<Byte>>) inObj;
+            else
+                throw new ClassNotFoundException("Saved messages file was corrupted");
+
+            fileIn.close();
+            file.close();
+
+
+            messagesFile = new File("lastSnapshot");
+            file = new FileInputStream(messagesFile);
+            fileIn = new ObjectInputStream(file);
+
+            inObj = fileIn.readObject();
+            if(inObj instanceof SnapshotCreator)
+                recoveredSystem = (SnapshotCreator) inObj;
+            else
+                throw new ClassNotFoundException("State file was corrupted");
+
+            fileIn.close();
+            file.close();
+        }catch (IOException | ClassNotFoundException e) {
+            throw new FileNotFoundException("File was corrupted");
+        }
+        synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
+
+        recoveredSystem.startController();
+        System.out.println("Recovered Controller is running.");
+        return recoveredSystem;
+    }
+
     public SnapshotCreator(Controller mainObject, int id, int serverPort) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
