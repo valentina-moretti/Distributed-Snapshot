@@ -16,6 +16,7 @@ public class SnapshotCreator
     static int serverPort;
     //todo:non usiamo piu i serializable
     private ArrayList<Object> contextObjects;
+    private Controller controller;
     private MessageBuffer messages;
     private List<String> connectionNames;
     private transient Map<String, ConnectionManager> nameToConnection;
@@ -71,6 +72,10 @@ public class SnapshotCreator
         return recoveredSystem;
     }
 
+    public void startController(){
+        this.controller.run();
+    };
+
     public SnapshotCreator(Controller mainObject, int id, int serverPort) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
@@ -107,7 +112,7 @@ public class SnapshotCreator
 
 
     }
-
+/*
     void Recover() throws IOException {
         Gson gson = new Gson();
 
@@ -142,6 +147,8 @@ public class SnapshotCreator
         this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, ArrayList<Byte>>>(){}.getType());
 
     }
+
+ */
 
 
     synchronized void connectionAccepted(Socket connection)
@@ -297,20 +304,6 @@ public class SnapshotCreator
             e.printStackTrace();
         }
 
-    }
-
-    public SnapshotCreator snapshotDeserialization(){
-        SnapshotCreator sc = null;
-
-        // Deserialization
-
-
-            // Method for deserialization of object
-            sc = jsonConverter.fromJsonFileToObject("SnapCreator"+identifier+".json");
-            System.out.println("Object has been deserialized\n");
-
-
-        return sc;
     }
 
     public Map<String, ConnectionManager> getNameToConnection() {
