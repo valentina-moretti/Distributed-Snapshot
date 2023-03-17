@@ -139,10 +139,11 @@ public class SnapshotCreator implements Serializable
      * @return a String identifier of the connection created
      * @throws IOException
      */
-    synchronized public String connect_to(InetAddress address, Integer p) throws IOException
+    synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
-        String name = address.toString();
-        Socket socket = new Socket(address, p);
+        String name = address.toString() + "-" + port;
+        Socket socket = new Socket(address, port);
+        connectionNames.add(name);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
         messages.addClient(name);
