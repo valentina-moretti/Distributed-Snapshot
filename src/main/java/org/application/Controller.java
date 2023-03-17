@@ -49,7 +49,7 @@ public class Controller implements Serializable {
                     Scanner scanner = new Scanner(System.in);
                     System.out.println("Port: ");
                     try {
-                        int p = scanner.nextInt();
+                        Integer p = scanner.nextInt();
                         sc.connect_to(InetAddress.getByName(s), p);
                     } catch (Exception e) {
                         e.printStackTrace();
