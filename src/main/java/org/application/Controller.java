@@ -129,7 +129,7 @@ public class Controller implements Serializable {
     // For testing
 
     void Serialize() {
-        sc.SaveState();
+        sc.saveState();
     }
 
     public SnapshotCreator getSc() {

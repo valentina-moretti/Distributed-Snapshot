@@ -216,21 +216,62 @@ public class SnapshotCreator
     {
         snapshotting = false;
         notifyAll();
-        SerializeMessages();
-        SerializeConnections();
-        System.out.println(">> Snapshot ended <<");
+        try {
+            File messagesFile = new File("savedMessages");
+            if(!messagesFile.createNewFile())
+            {
+                if(!messagesFile.delete())
+                    throw new RuntimeException("Failed to create savedMessages file");
+                if(!messagesFile.createNewFile())
+                    throw new RuntimeException("Failed to create savedMessages file");
+            }
+            FileOutputStream file = new FileOutputStream(messagesFile);
+            ObjectOutputStream fileOut = new ObjectOutputStream(file);
+
+            fileOut.writeObject(savedMessages);
+
+            fileOut.close();
+            file.close();
+        }catch (IOException e) { throw new RuntimeException("Error in creating savedMessages file!"); }
+        savedMessages.clear();
     }
 
-
+    /**
+     * Suspends the calling thread as long as there is a snapshot running
+     * @throws InterruptedException
+     */
     synchronized void waitUntilSnapshotEnded() throws InterruptedException
     {
         while (isSnapshotting())
             wait();
     }
+
     synchronized boolean isSnapshotting()
     {
         return snapshotting;
     }
+
+    synchronized public void saveState()
+    {
+        try {
+            File snapshotFile = new File("lastSnapshot");
+            if(!snapshotFile.createNewFile())
+            {
+                if(!snapshotFile.delete())
+                    throw new RuntimeException("Failed to create snapshotFile");
+                if(!snapshotFile.createNewFile())
+                    throw new RuntimeException("Failed to create snapshotFile");
+            }
+            FileOutputStream file = new FileOutputStream(snapshotFile);
+            ObjectOutputStream fileOut = new ObjectOutputStream(file);
+
+            fileOut.writeObject(this);
+
+            fileOut.close();
+            file.close();
+        }catch (IOException e) { throw new RuntimeException("Error in creating snapshot file!"); }
+    }
+
 
     public void SerializeMessages(){
         Gson gson = new Gson();
