@@ -5,6 +5,7 @@ import org.application.Controller;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -127,11 +128,13 @@ public class SnapshotCreator implements Serializable
      * Use this method to connect to other nodes knowing their address; if a new connection is established
      * without the usage of this method the communication of that connection will not be registered in the
      * snapshot
+     *
      * @param address
+     * @param p
      * @return a String identifier of the connection created
      * @throws IOException
      */
-    synchronized public String connect_to(InetAddress address) throws IOException
+    synchronized public String connect_to(InetAddress address, Integer p) throws IOException
     {
         String name = address.toString();
         Socket socket = new Socket(address, serverPort);
@@ -321,5 +324,25 @@ public class SnapshotCreator implements Serializable
         }
         //TODO: devo riconnettermi solo a quelli con cui non ho già una connessione e rifiutare o chiudere
         // le connessioni da quelli con cui mi sono già connesso
+    }
+
+    public Map<String, ConnectionManager> getNameToConnection() {
+        return nameToConnection;
+    }
+
+
+    public String readMessages(){
+        HashMap<String, ArrayList<Byte>> m = messages.getIncomingMessages();
+        String s=null;
+        for (String name: m.keySet()) {
+            System.out.println(name + " :");
+            ArrayList bytes = m.get(name);
+            byte b[] = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++)
+                b[i] = (byte) bytes.get(i);
+            s = new String(b, StandardCharsets.UTF_8);
+            System.out.println(s);
+        }
+        return s;
     }
 }
