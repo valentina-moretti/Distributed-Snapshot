@@ -146,7 +146,7 @@ public class SnapshotCreator
         newConnectionM.start();
     }
 
-    synchronized public String connect_to(InetAddress address, Integer port) throws IOException
+    synchronized public String connect_to(InetAddress address, int port) throws IOException
     {
         String name = address.toString() + "-" + port;
         Socket socket = new Socket(address, port);

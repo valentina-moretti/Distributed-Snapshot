@@ -23,17 +23,19 @@ public class Controller implements Serializable {
     private int identifier;
 
 
-    public Controller() {
+    public Controller(int identifier, int serverPort) {
+        this.identifier = identifier;
+        this.serverPort = serverPort;
         this.objectList = new ArrayList<>();
         this.farm = new Farm(this);
-    }
-
-    public void run() {
         try {
             sc = new SnapshotCreator(this, identifier, serverPort);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void run() {
         String s = "";
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
         //todo: s non puo essere ancora quit
@@ -47,7 +49,7 @@ public class Controller implements Serializable {
                     Scanner scanner = new Scanner(System.in);
                     System.out.println("Port: ");
                     try {
-                        Integer p = scanner.nextInt();
+                        int p = scanner.nextInt();
                         sc.connect_to(InetAddress.getByName(s), p);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -73,7 +75,7 @@ public class Controller implements Serializable {
                     if(s.length()>11) {
                         if (s.substring(0, 11).equals("Add animal ")) {
                             String animal = s.split("Add animal")[1];
-                            getFarm().addAnimal(new Animal(animal));
+                            this.farm.addAnimal(new Animal(animal));
                         }
                     }
                 } else if (s.equals("ip")) {
@@ -92,9 +94,11 @@ public class Controller implements Serializable {
         }
     }
 
+
     public Farm getFarm(){
         return this.farm;
     }
+    /*
 
     public Farm recoverFarm(List<Object> list) throws ClassNotFoundException {
         System.out.println(list);
@@ -111,6 +115,8 @@ public class Controller implements Serializable {
         throw new ClassNotFoundException();
     }
 
+     */
+
     public int getServerPort() {
         return serverPort;
     }
@@ -119,9 +125,6 @@ public class Controller implements Serializable {
         this.serverPort = serverPort;
     }
 
-    void read() {
-        sc.readMessages();
-    }
 
     // For testing
 
@@ -134,6 +137,7 @@ public class Controller implements Serializable {
     public SnapshotCreator getSc() {
         return sc;
     }
+    /*
 
     void recover() throws IOException {
         Gson gson = new Gson();
@@ -174,9 +178,13 @@ public class Controller implements Serializable {
         //todo: there is no need of message recovery, right?
     }
 
+
+
     public void setIdentifier(int identifier) {
         this.identifier = identifier;
     }
+
+     */
 
     public void setObjectList(ArrayList<Object> objectList) {
         this.objectList = objectList;
