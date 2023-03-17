@@ -12,7 +12,7 @@ import java.util.Map;
 public class SnapshotCreator implements Serializable
 {
     @Serial private static final long serialVersionUID = 1032L;
-    static final int serverPort=55831;
+    static int serverPort=55831;
     private final List<Serializable> contextObjects;
     private transient MessageBuffer messages;
     private transient Map<String, ConnectionManager> nameToConnection;
@@ -66,8 +66,8 @@ public class SnapshotCreator implements Serializable
             throw new FileNotFoundException("File was corrupted");
         }
         synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
-        ArrayList<> objects = recoveredSystem.getContextObjects();
-        T controller = (T) objects.get(0);
+
+        T controller = (T) recoveredSystem.getContextObjects().get(0);
         controller.run();
         return recoveredSystem;
     }
@@ -84,7 +84,7 @@ public class SnapshotCreator implements Serializable
      *                   it must be a thread in order to be executed after the recovery
      * @throws IOException
      */
-    public <T extends Thread & Serializable> SnapshotCreator(T mainObject) throws IOException
+    public <T extends Thread & Serializable> SnapshotCreator(T mainObject, int identifier, int serverPort) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
     {
@@ -98,6 +98,9 @@ public class SnapshotCreator implements Serializable
         snapshotting = false;
         snapshotArrivedFrom = new HashMap<>();
         savedMessages = new HashMap<>();
+        this.serverPort = serverPort;
+        this.
+
     }
 
 
