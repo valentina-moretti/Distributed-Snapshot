@@ -2,6 +2,7 @@ package org.project;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.application.Controller;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -26,7 +27,7 @@ public class SnapshotCreator
     private Map<String, ArrayList<Byte>> savedMessages;
     static int identifier;
 
-    public SnapshotCreator(Object mainObject, int id, int serverPort) throws IOException
+    public SnapshotCreator(Controller mainObject, int id, int serverPort) throws IOException
     // there should be another parameter: the function to
     // be executed when reloading from a previous snapshot
     {
@@ -37,6 +38,7 @@ public class SnapshotCreator
         nameToConnection = new HashMap<>();
         connections = new ArrayList<>();
         connectionNames = new ArrayList<>();
+
         contextObjects = new ArrayList<>();
         savedMessages = new HashMap<>();
         identifier= id;
@@ -210,13 +212,18 @@ public class SnapshotCreator
 
     public void SerializeObjects(){
         Gson gson = new Gson();
+        String serializedObjects = gson.toJson(contextObjects);
 
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Objects"+identifier+".json"));
-            out.write(gson.toJson(contextObjects));
-            out.close();
+        // Scrittura su file
+        File file = new File("Objects" + identifier + ".json");
+        try (FileOutputStream fos = new FileOutputStream(file);
+             OutputStreamWriter osw = new OutputStreamWriter(fos);
+             BufferedWriter writer = new BufferedWriter(osw)) {
+            writer.write(serializedObjects);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
     }

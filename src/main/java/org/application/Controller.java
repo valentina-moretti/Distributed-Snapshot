@@ -6,6 +6,7 @@ import com.google.gson.stream.JsonReader;
 import org.project.SnapshotCreator;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -19,18 +20,10 @@ public class Controller implements Serializable {
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
-    private static Controller instance;
     private int identifier;
 
-    public static Controller getInstance() {
-        if (instance == null) {
-            instance = new Controller();
-        }
-        return instance;
-    }
 
-    private Controller() {
-        instance = null;
+    public Controller() {
         this.objectList = new ArrayList<>();
         this.farm = new Farm(this);
     }
@@ -79,7 +72,8 @@ public class Controller implements Serializable {
                     s= sc.readMessages();
                     if(s.length()>11) {
                         if (s.substring(0, 11).equals("Add animal ")) {
-                            getFarm().addAnimal(new Animal(s.substring(11, s.length()-11)));
+                            String animal = s.split("Add animal")[1];
+                            getFarm().addAnimal(new Animal(animal));
                         }
                     }
                 } else if (s.equals("ip")) {
@@ -102,9 +96,19 @@ public class Controller implements Serializable {
         return this.farm;
     }
 
-    public Farm recoverFarm(List<Object> list) {
+    public Farm recoverFarm(List<Object> list) throws ClassNotFoundException {
         System.out.println(list);
-        return ((Controller) list.get(0)).getFarm();
+        System.out.println("Objects:");
+        for (Object o :
+                list) {
+            System.out.println(o);
+            if (o instanceof Controller) {
+                System.out.println("Farm detected");
+                return ((Controller) o).getFarm();
+
+            }
+        }
+        throw new ClassNotFoundException();
     }
 
     public int getServerPort() {
@@ -140,10 +144,20 @@ public class Controller implements Serializable {
 
         //Objects Recovery
 
-        JsonReader reader = new JsonReader(new FileReader("Objects"+identifier+".json"));
-        List<Object> list = gson.fromJson(reader, new TypeToken<List<Object>>(){}.getType());
-        recoverFarm(list);
+        File file = new File("Objects"+identifier+".json");
 
+        try (FileInputStream fis = new FileInputStream(file);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader reader = new BufferedReader(isr)) {
+            String fileContent = reader.readLine();
+
+            // Deserializzazione
+            Type type = new TypeToken<List<Object>>() {}.getType();
+            List<Object> deserializedObjects = gson.fromJson(fileContent, type);
+            this.farm = recoverFarm(deserializedObjects);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
 
         Thread controllerThread = new Thread() {
