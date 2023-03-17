@@ -129,9 +129,7 @@ public class Controller implements Serializable {
     // For testing
 
     void Serialize() {
-        sc.SerializeMessages();
-        sc.SerializeConnections();
-        sc.SerializeObjects();
+        sc.SaveState();
     }
 
     public SnapshotCreator getSc() {
