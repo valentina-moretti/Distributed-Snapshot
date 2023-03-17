@@ -28,7 +28,7 @@ public class SnapshotCreator implements Serializable
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    static public SnapshotCreator snapshotDeserialization() throws FileNotFoundException
+    static public <T extends Thread & Serializable> SnapshotCreator snapshotDeserialization() throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, List<Byte>> messages = null;
@@ -65,8 +65,15 @@ public class SnapshotCreator implements Serializable
         }catch (IOException | ClassNotFoundException e) {
             throw new FileNotFoundException("File was corrupted");
         }
-        synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; }
+        synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
+        ArrayList<> objects = recoveredSystem.getContextObjects();
+        T controller = (T) objects.get(0);
+        controller.run();
         return recoveredSystem;
+    }
+
+    public List<Serializable> getContextObjects() {
+        return contextObjects;
     }
 
     /**
