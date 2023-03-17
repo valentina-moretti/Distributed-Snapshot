@@ -17,6 +17,7 @@ public class SnapshotCreator implements Serializable
     @Serial private static final long serialVersionUID = 1032L;
     private int serverPort;
     private final List<Serializable> contextObjects;
+    private List<String> connectionNames;
     private transient MessageBuffer messages;
     private transient Map<String, ConnectionManager> nameToConnection;
     private transient List<ConnectionManager> connections;
@@ -98,6 +99,7 @@ public class SnapshotCreator implements Serializable
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
     {
+        connectionNames = new ArrayList<>();
         contextObjects = new ArrayList<>();
         contextObjects.add(controller);
         messages = new MessageBuffer(this);
@@ -121,8 +123,9 @@ public class SnapshotCreator implements Serializable
      */
     synchronized void connectionAccepted(Socket connection)
     {
-        String name = connection.getInetAddress().toString();
+        String name = connection.getInetAddress().toString() + "-" + connection.getPort();
         ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+        connectionNames.add(name);
         connections.add(newConnectionM);
         messages.addClient(name);
         nameToConnection.put(name, newConnectionM);
