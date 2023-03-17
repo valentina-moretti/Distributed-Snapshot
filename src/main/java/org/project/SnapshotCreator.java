@@ -174,11 +174,9 @@ public class SnapshotCreator
         contextObjects.add(newObject);
     }
 
-    synchronized public void startSnapshot()
+    public synchronized void startSnapshot()
     {
-        System.out.println(">> Snapshot started. <<");
-        SerializeObjects();
-        SerializeConnections();
+        saveState();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
         for(String connectionName : nameToConnection.keySet())
@@ -196,22 +194,36 @@ public class SnapshotCreator
         }
     }
 
+    /**
+     * Tells the SnapshotCreator that the snapshot message arrived from the connection connectionName.
+     * If the snapshot messages arrived from all the connections the snapshot logic will end
+     * @param connectionName string identifier of the connection
+     */
     synchronized void snapshotMessageArrived(String connectionName)
     {
-        //todo per Francio: controlla te lo abbiamo modificato
         snapshotArrivedFrom.replace(connectionName, true);
-        boolean snapshotEndedFlag = true;
+        boolean snapshotEndedFlag = false;
         for(Boolean arrived : snapshotArrivedFrom.values())
-            snapshotEndedFlag = snapshotEndedFlag && snapshotting && arrived;
+            snapshotEndedFlag = snapshotting && arrived;
         if(snapshotEndedFlag)
             stopSnapshot();
     }
 
-    synchronized void messageDuringSnapshot(String connectionName, ArrayList<Byte> message)
+    /**
+     * Method used to save all the messages arrived during the snapshot, from a specific connection, as a
+     * list of bytes
+     * @param connectionName string identifier of the connection
+     * @param message
+     */
+    synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
     {
         savedMessages.get(connectionName).addAll(message);
     }
 
+    /**
+     * As the state of the program was saved at the beginning of the snapshot, the messages arrived during
+     * the snapshot are saved as well at the end of the snapshot
+     */
     synchronized private void stopSnapshot()
     {
         snapshotting = false;
