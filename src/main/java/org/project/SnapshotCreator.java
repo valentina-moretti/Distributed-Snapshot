@@ -36,20 +36,47 @@ public class SnapshotCreator
         // i messaggi salvati li devo mettere nel buffer non in savedMessages
         // se non ci sono i file lancio FileNotFountException
         try{
-            File messagesFile = new File("lastSnapshot"+identifier);
+
+            File messagesFile = new File("savedMessages"+identifier+".txt");
             FileInputStream file = new FileInputStream(messagesFile);
             ObjectInputStream fileIn = new ObjectInputStream(file);
 
-            Object inObj = fileIn.readObject();
+            Object inObj = null;
+            try {
+                inObj = fileIn.readObject();
+            } catch (IOException e){
+                System.out.println("Cannot read object");
+            }
+            if(inObj instanceof Map)
+                messages = (Map<String, ArrayList<Byte>>) inObj;
+            else {
+                System.out.println("Saved messages file was corrupted");
+                throw new ClassNotFoundException("Saved messages file was corrupted");
+            }
+            try {
+                fileIn.close();
+                file.close();
+            } catch (IOException e){
+                System.out.println("Cannot close file");
+            }
 
+
+            File objectsFile = new File("lastSnapshot"+identifier+".txt");
+            FileInputStream file1 = new FileInputStream(objectsFile);
+            ObjectInputStream fileIn1 = new ObjectInputStream(file1);
+
+            inObj = fileIn1.readObject();
             if(inObj instanceof SnapshotCreator)
                 recoveredSystem = (SnapshotCreator) inObj;
-            else
+            else {
+                System.out.println("State file was corrupted");
                 throw new ClassNotFoundException("State file was corrupted");
+            }
 
             fileIn.close();
             file.close();
         }catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
             throw new FileNotFoundException("File was corrupted");
         }
         synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
@@ -222,8 +249,30 @@ public class SnapshotCreator
         System.out.println("Stopping snapshot");
         snapshotting = false;
         notifyAll();
+
+        Gson gson = new Gson();
+        String serializedObjects = gson.toJson(savedMessages);
+        File file = new File("savedMessages"+identifier+".txt");
+        try (FileOutputStream fos = new FileOutputStream(file);
+             OutputStreamWriter osw = new OutputStreamWriter(fos);
+             BufferedWriter writer = new BufferedWriter(osw))
+        {
+            writer.write(serializedObjects);
+        }
+        catch (FileNotFoundException fileNotFoundException)
+        {
+            fileNotFoundException.printStackTrace();
+        }
+        catch (IOException ioException)
+        {
+            ioException.printStackTrace();
+        }
+
+        /*
         try {
-            File messagesFile = new File("savedMessages");
+
+
+            File messagesFile = new File("savedMessages"+identifier+".txt");
             if(!messagesFile.createNewFile())
             {
                 if(!messagesFile.delete())
@@ -238,7 +287,11 @@ public class SnapshotCreator
 
             fileOut.close();
             file.close();
+
+
         }catch (IOException e) { throw new RuntimeException("Error in creating savedMessages file!"); }
+
+             */
         savedMessages.clear();
     }
 
@@ -261,7 +314,7 @@ public class SnapshotCreator
     {
         Gson gson = new Gson();
         String serializedObjects = gson.toJson(this);
-        File file = new File("lastSnapshot"+identifier);
+        File file = new File("lastSnapshot"+identifier+".txt");
         try (FileOutputStream fos = new FileOutputStream(file);
              OutputStreamWriter osw = new OutputStreamWriter(fos);
              BufferedWriter writer = new BufferedWriter(osw))

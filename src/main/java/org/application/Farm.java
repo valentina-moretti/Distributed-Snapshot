@@ -26,4 +26,7 @@ public class Farm implements Serializable {
         return null;
     }
 
+    public List<Animal> getAnimalList() {
+        return animalList;
+    }
 }

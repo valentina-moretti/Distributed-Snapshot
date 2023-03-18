@@ -84,6 +84,11 @@ public class Controller implements Serializable {
                     Serialize();
                 } else if (s.equals("snap")) {
                     sc.startSnapshot();
+                } else if (s.equals("farm")) {
+                    for (Animal a :
+                            this.farm.getAnimalList()) {
+                        System.out.println(a.getName());
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
