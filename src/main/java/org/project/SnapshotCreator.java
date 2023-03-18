@@ -36,7 +36,7 @@ public class SnapshotCreator
         // i messaggi salvati li devo mettere nel buffer non in savedMessages
         // se non ci sono i file lancio FileNotFountException
         try{
-            File messagesFile = new File("savedMessages");
+            File messagesFile = new File("savedMessages"+identifier);
             FileInputStream file = new FileInputStream(messagesFile);
             ObjectInputStream fileIn = new ObjectInputStream(file);
 
@@ -50,7 +50,7 @@ public class SnapshotCreator
             file.close();
 
 
-            messagesFile = new File("lastSnapshot");
+            messagesFile = new File("lastSnapshot"+identifier);
             file = new FileInputStream(messagesFile);
             fileIn = new ObjectInputStream(file);
 
@@ -265,6 +265,25 @@ public class SnapshotCreator
 
     synchronized public void saveState()
     {
+        Gson gson = new Gson();
+        String serializedObjects = gson.toJson(this);
+        File file = new File("lastSnapshot"+identifier);
+        try (FileOutputStream fos = new FileOutputStream(file);
+             OutputStreamWriter osw = new OutputStreamWriter(fos);
+             BufferedWriter writer = new BufferedWriter(osw))
+        {
+            writer.write(serializedObjects);
+        }
+        catch (FileNotFoundException fileNotFoundException)
+        {
+            fileNotFoundException.printStackTrace();
+        }
+        catch (IOException ioException)
+        {
+            ioException.printStackTrace();
+        }
+
+            /*
         try {
             File snapshotFile = new File("lastSnapshot");
             if(!snapshotFile.createNewFile())
@@ -279,9 +298,13 @@ public class SnapshotCreator
 
             fileOut.writeObject(this);
 
-            fileOut.close();
             file.close();
+            file.close();
+
+
         }catch (IOException e) { throw new RuntimeException("Error in creating snapshot file!"); }
+
+             */
     }
 
 

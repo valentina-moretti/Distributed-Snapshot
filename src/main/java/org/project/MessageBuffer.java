@@ -10,7 +10,7 @@ class MessageBuffer
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
     private final HashMap<String, ArrayList<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
-    private final SnapshotCreator snapshotManager;
+    private transient final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
     {
