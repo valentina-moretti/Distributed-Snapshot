@@ -17,7 +17,7 @@ public class SnapshotCreator
     //todo:non usiamo piu i serializable
     private ArrayList<Object> contextObjects;
     private Controller controller;
-    private MessageBuffer messages;
+    private transient MessageBuffer messages;
     private List<String> connectionNames;
     private transient Map<String, ConnectionManager> nameToConnection;
     private transient List<ConnectionManager> connections;
@@ -36,25 +36,12 @@ public class SnapshotCreator
         // i messaggi salvati li devo mettere nel buffer non in savedMessages
         // se non ci sono i file lancio FileNotFountException
         try{
-            File messagesFile = new File("savedMessages"+identifier);
+            File messagesFile = new File("lastSnapshot"+identifier);
             FileInputStream file = new FileInputStream(messagesFile);
             ObjectInputStream fileIn = new ObjectInputStream(file);
 
             Object inObj = fileIn.readObject();
-            if(inObj instanceof Map)
-                messages = (Map<String, ArrayList<Byte>>) inObj;
-            else
-                throw new ClassNotFoundException("Saved messages file was corrupted");
 
-            fileIn.close();
-            file.close();
-
-
-            messagesFile = new File("lastSnapshot"+identifier);
-            file = new FileInputStream(messagesFile);
-            fileIn = new ObjectInputStream(file);
-
-            inObj = fileIn.readObject();
             if(inObj instanceof SnapshotCreator)
                 recoveredSystem = (SnapshotCreator) inObj;
             else
@@ -90,7 +77,7 @@ public class SnapshotCreator
         connectionAccepter.start();
         snapshotting = false;
         snapshotArrivedFrom = new HashMap<>();
-        savedMessages = new HashMap<String, ArrayList<Byte>>();
+        savedMessages = new HashMap<>();
         SnapshotCreator.serverPort = serverPort;
         SnapshotCreator.identifier = identifier;
         this.controller = controller;
@@ -176,11 +163,14 @@ public class SnapshotCreator
 
     public synchronized void startSnapshot()
     {
+        System.out.println("Starting snapshot");
         saveState();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
-        for(String connectionName : nameToConnection.keySet())
-            snapshotArrivedFrom.put(connectionName, false);
+        for(String name: connectionNames){
+            savedMessages.put(name, new ArrayList<>());
+            snapshotArrivedFrom.put(name, false);
+        }
         snapshotting = true;
 
         byte[] snapshotMessage = new byte[MessageBuffer.snapshotMessage.length];
@@ -202,9 +192,10 @@ public class SnapshotCreator
     synchronized void snapshotMessageArrived(String connectionName)
     {
         snapshotArrivedFrom.replace(connectionName, true);
-        boolean snapshotEndedFlag = false;
+        System.out.println(snapshotArrivedFrom);
+        boolean snapshotEndedFlag = snapshotting;
         for(Boolean arrived : snapshotArrivedFrom.values())
-            snapshotEndedFlag = snapshotting && arrived;
+            snapshotEndedFlag = snapshotEndedFlag && arrived;
         if(snapshotEndedFlag)
             stopSnapshot();
     }
@@ -218,6 +209,8 @@ public class SnapshotCreator
     synchronized void messageDuringSnapshot(String connectionName, List<Byte> message)
     {
         savedMessages.get(connectionName).addAll(message);
+        System.out.println("Saved messages: ");
+        System.out.println(savedMessages);
     }
 
     /**
@@ -226,6 +219,7 @@ public class SnapshotCreator
      */
     synchronized private void stopSnapshot()
     {
+        System.out.println("Stopping snapshot");
         snapshotting = false;
         notifyAll();
         try {

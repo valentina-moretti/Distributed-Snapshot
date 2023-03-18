@@ -34,11 +34,16 @@ class ConnectionManager extends Thread
 
     private void receive() throws IOException
     {
-        List<Byte> readMessage = new ArrayList<>();
+        ArrayList<Byte> readMessage = new ArrayList<>();
         while (socket.getInputStream().available()!=0)
             readMessage.add((byte) socket.getInputStream().read());
+        if(readMessage.size()>0) {
+            System.out.println("Message from " + name + ":");
+            System.out.println(readMessage);
+            buffer.addMessage(name, readMessage);
+            buffer.getInputStream(name);
+        }
 
-        buffer.addMessage(name, (ArrayList<Byte>) readMessage);
     }
 
     synchronized OutputStream getOutputStream() throws IOException

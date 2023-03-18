@@ -30,6 +30,7 @@ class MessageBuffer
 
     synchronized InputStream getInputStream(String name)
     {
+        System.out.println("getInputStream");
         byte[] input = new byte[incomingMessages.get(name).size()];
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
@@ -50,12 +51,14 @@ class MessageBuffer
         }
         else
         {
-            if(snapPosition!=-1)
+            if(snapPosition!=-1) {
                 snapshotManager.startSnapshot();
-            snapshotManager.messageDuringSnapshot (name,
-               new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
+                snapshotManager.messageDuringSnapshot(name,
+                        new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
+                snapshotManager.snapshotMessageArrived(name);
+            }
         }
-        incomingMessages.get(name).clear();
+        //incomingMessages.get(name).clear();
         return new ByteArrayInputStream(input);
     }
 
@@ -73,6 +76,7 @@ class MessageBuffer
             {
                 if(incomingMessages.get(name).subList(i, i+snapshotMessage.length)
                         .equals(Arrays.asList(snapshotMessage)))
+                    System.out.println("Snapshot message arrived");
                     return i;
             }
         }

@@ -16,17 +16,14 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Controller implements Serializable {
-    private List<Object> objectList;
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
-    private int identifier;
 
 
     public Controller(int identifier, int serverPort) {
-        this.identifier = identifier;
+
         this.serverPort = serverPort;
-        this.objectList = new ArrayList<>();
         this.farm = new Farm(this);
         try {
             sc = new SnapshotCreator(this, identifier, serverPort);
@@ -184,7 +181,5 @@ public class Controller implements Serializable {
 
      */
 
-    public void setObjectList(ArrayList<Object> objectList) {
-        this.objectList = objectList;
-    }
+
 }
