@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import org.application.Controller;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -28,7 +29,7 @@ public class SnapshotCreator
     private Map<String, ArrayList<Byte>> savedMessages;
     static int identifier;
 
-    static public SnapshotCreator snapshotDeserialization() throws FileNotFoundException
+    static public SnapshotCreator snapshotDeserialization(int identifier) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
@@ -38,34 +39,23 @@ public class SnapshotCreator
         try{
 
             File messagesFile = new File("savedMessages"+identifier+".txt");
-            FileInputStream file = new FileInputStream(messagesFile);
-            ObjectInputStream fileIn = new ObjectInputStream(file);
+            Reader reader = new FileReader(messagesFile);
 
             Object inObj = null;
-            try {
-                inObj = fileIn.readObject();
-            } catch (IOException e){
-                System.out.println("Cannot read object");
-            }
+            Gson gson = new Gson();
+            Type type = new TypeToken<Map<String, ArrayList<Byte>>>(){}.getType();
+            inObj = gson.fromJson(reader, type);
             if(inObj instanceof Map)
                 messages = (Map<String, ArrayList<Byte>>) inObj;
             else {
                 System.out.println("Saved messages file was corrupted");
                 throw new ClassNotFoundException("Saved messages file was corrupted");
             }
-            try {
-                fileIn.close();
-                file.close();
-            } catch (IOException e){
-                System.out.println("Cannot close file");
-            }
 
 
             File objectsFile = new File("lastSnapshot"+identifier+".txt");
-            FileInputStream file1 = new FileInputStream(objectsFile);
-            ObjectInputStream fileIn1 = new ObjectInputStream(file1);
-
-            inObj = fileIn1.readObject();
+            reader = new FileReader(objectsFile);
+            inObj = gson.fromJson(reader, SnapshotCreator.class);
             if(inObj instanceof SnapshotCreator)
                 recoveredSystem = (SnapshotCreator) inObj;
             else {
@@ -73,13 +63,29 @@ public class SnapshotCreator
                 throw new ClassNotFoundException("State file was corrupted");
             }
 
-            fileIn.close();
-            file.close();
         }catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             throw new FileNotFoundException("File was corrupted");
         }
         synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
+
+        recoveredSystem.controller.setSc(recoveredSystem);
+        recoveredSystem.messages = new MessageBuffer(recoveredSystem);
+        recoveredSystem.nameToConnection = new HashMap<>();
+        recoveredSystem.connections = new ArrayList<>();
+        try {
+            recoveredSystem.reconnect(recoveredSystem.connectionNames);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            recoveredSystem.connectionAccepter = new ConnectionAccepter(recoveredSystem);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        recoveredSystem.connectionAccepter.start();
+        recoveredSystem.snapshotArrivedFrom = new HashMap<>();
+        recoveredSystem.identifier = identifier;
 
         recoveredSystem.startController();
         System.out.println("Recovered Controller is running.");
@@ -171,6 +177,31 @@ public class SnapshotCreator
         nameToConnection.put(name, newConnectionM);
         newConnectionM.start();
         return name;
+    }
+
+    synchronized public void reconnect(List<String> connectionNames) throws IOException
+    {
+        String address;
+        String port;
+        Socket socket;
+        String[] strings;
+        ConnectionManager newConnectionM;
+        for(String name: connectionNames){
+            strings=name.split("-");
+            address=strings[0];
+            port=strings[1];
+            System.out.println(address.substring(1));
+            System.out.println(port);
+            System.out.println(InetAddress.getByName(address.substring(1)));
+            System.out.println(Integer.parseInt(port));
+            socket = new Socket(InetAddress.getByName(address.substring(1)), Integer.parseInt(port));
+            connectionNames.add(name);
+            newConnectionM = new ConnectionManager(socket, name, messages);
+            connections.add(newConnectionM);
+            messages.addClient(name);
+            nameToConnection.put(name, newConnectionM);
+            newConnectionM.start();
+        }
     }
 
     synchronized public InputStream getInputStream(String connectionName)

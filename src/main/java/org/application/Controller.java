@@ -134,9 +134,11 @@ public class Controller implements Serializable {
         sc.saveState();
     }
 
-    public SnapshotCreator getSc() {
-        return sc;
+    public void setSc(SnapshotCreator sc){
+        this.sc=sc;
     }
+
+
     /*
 
     void recover() throws IOException {
