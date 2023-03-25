@@ -29,8 +29,9 @@ public class Main {
                 Scanner s = new Scanner(System.in);
                 System.out.println("Identifier: ");
                 try {
-                    identifier = s.nextInt();
-                } catch (Exception ee) {
+                    Integer i = s.nextInt();
+                    identifier = i;
+                } catch (Exception e) {
                     identifier = 0;
                 }
 
@@ -51,8 +52,9 @@ public class Main {
                     Scanner s = new Scanner(System.in);
                     System.out.println("Port: ");
                     try {
-                        serverPort = s.nextInt();
-                    } catch (Exception ee) {
+                        Integer p = s.nextInt();
+                        serverPort = p;
+                    } catch (Exception e) {
                         serverPort = 35002 + identifier;
                     }
 
@@ -75,7 +77,7 @@ public class Main {
                 System.out.println("Recovering.");
                 try {
                     controller.recover();
-                } catch (IOException ee) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
                 System.out.println("Recovering completed.");
