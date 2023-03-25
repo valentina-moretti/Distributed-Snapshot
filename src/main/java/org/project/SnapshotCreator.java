@@ -1,7 +1,5 @@
 package org.project;
 
-import org.application.Controller;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -23,9 +21,6 @@ public class SnapshotCreator implements Serializable
     private transient boolean snapshotting;
     private transient Map<String, Boolean> snapshotArrivedFrom;
     private transient Map<String, List<Byte>> savedMessages;
-    private int identifier;
-
-    private Controller controller;
 
     /**
      * @return a SnapshotCreator object reconstructed from the file named "lastSnapshot"
@@ -89,7 +84,7 @@ public class SnapshotCreator implements Serializable
      *                   it must be a thread in order to be executed after the recovery
      * @throws IOException
      */
-    public SnapshotCreator(Controller mainObject, int identifier, int serverPort) throws IOException
+    public <T extends Thread & Serializable> SnapshotCreator(T mainObject, int identifier, int serverPort) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
     {
@@ -104,7 +99,7 @@ public class SnapshotCreator implements Serializable
         snapshotArrivedFrom = new HashMap<>();
         savedMessages = new HashMap<>();
         this.serverPort = serverPort;
-        this.identifier = identifier;
+        this.
 
     }
 
