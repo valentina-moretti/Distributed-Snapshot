@@ -1,7 +1,6 @@
 package org.project;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -12,7 +11,7 @@ import java.util.List;
  */
 class ConnectionManager extends Thread
 {
-    private transient final Socket socket;
+    private final Socket socket;
     private final MessageBuffer buffer;
     private final String name;
 
@@ -34,7 +33,7 @@ class ConnectionManager extends Thread
 
     private void receive() throws IOException
     {
-        ArrayList<Byte> readMessage = new ArrayList<>();
+        List<Byte> readMessage = new ArrayList<>();
         while (socket.getInputStream().available()!=0)
             readMessage.add((byte) socket.getInputStream().read());
         if(readMessage.size()>0) {
@@ -49,10 +48,6 @@ class ConnectionManager extends Thread
     synchronized OutputStream getOutputStream() throws IOException
     {
         return socket.getOutputStream();
-    }
-
-    public MessageBuffer getBuffer() {
-        return buffer;
     }
 
     public String getIp() {

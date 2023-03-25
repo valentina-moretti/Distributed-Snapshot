@@ -7,10 +7,10 @@ import java.util.*;
 class MessageBuffer
 {
     static final Byte[] snapshotMessage =
-            {(byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255,
-             (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255, (byte)255};
-    private final HashMap<String, ArrayList<Byte>> incomingMessages;  //class used as implementation: AbstractQueue
-    private transient final SnapshotCreator snapshotManager;
+            {(byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255,
+             (byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255};
+    private final Map<String, List<Byte>> incomingMessages;
+    private final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
     {
@@ -18,12 +18,21 @@ class MessageBuffer
         snapshotManager = snapshotCreator;
     }
 
+    /**
+     * Used to add a connection queue of messages to the MessageBuffer
+     * @param name string identifier of the connection
+     */
     synchronized void addClient(String name)
     {
         incomingMessages.put(name, new ArrayList<>());
     }
 
-    synchronized void addMessage(String name, ArrayList<Byte> message)
+    /**
+     * add a List of Bytes arrived from a specific connection to the message buffer
+     * @param name identifier of the connection
+     * @param message message arrived from that connection in bytes
+     */
+    synchronized void addMessage(String name, List<Byte> message)
     {
         incomingMessages.get(name).addAll(message);
     }
@@ -67,23 +76,19 @@ class MessageBuffer
      * @param name the name of the connection of which we want to check the snapshot message presence
      * @return the position of the snapshot message in the incomingMessages or -1 if the message is not present
      */
-    //todo: cerco prima un 255 e poi gli altri? perchè?
     private int checkSnapshotMessage(String name)
     {
         for(int i=0; i <= incomingMessages.get(name).size()-snapshotMessage.length; i++)
         {
             if(incomingMessages.get(name).get(i).equals(snapshotMessage[0]))
             {
-                if(incomingMessages.get(name).subList(i, i+snapshotMessage.length)
-                        .equals(Arrays.asList(snapshotMessage)))
+                if(incomingMessages.get(name).subList(i, i+snapshotMessage.length).equals(Arrays.asList(snapshotMessage)))
+                {
                     System.out.println("Snapshot message arrived");
                     return i;
+                }
             }
         }
         return -1;
-    }
-
-    public HashMap<String, ArrayList<Byte>> getIncomingMessages() {
-        return incomingMessages;
     }
 }

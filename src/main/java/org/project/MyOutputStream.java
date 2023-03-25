@@ -5,7 +5,7 @@ import java.io.OutputStream;
 
 class MyOutputStream extends OutputStream
 {
-    private transient final SnapshotCreator snapshotManager;
+    private final SnapshotCreator snapshotManager;
     private final OutputStream outputStream;
 
     MyOutputStream(SnapshotCreator s, OutputStream outputStream)
