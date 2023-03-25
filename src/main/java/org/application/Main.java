@@ -20,11 +20,11 @@ public class Main {
         try {
             SnapshotCreator.snapshotDeserialization();
         }catch (FileNotFoundException e){
-
-            int identifier;
-            int serverPort;
+            Controller controller = Controller.getInstance();
+            Gson gson = new Gson();
 
             //identifier
+            int identifier;
             if (args.length == 0) {
                 Scanner s = new Scanner(System.in);
                 System.out.println("Identifier: ");
@@ -38,31 +38,54 @@ public class Main {
                 identifier = Integer.parseInt(args[0]);
             }
             System.out.println(identifier);
+            controller.setIdentifier(identifier);
             //end identifier
 
-            //server port
-            if (args.length == 0) {
-                Scanner s = new Scanner(System.in);
-                System.out.println("Port: ");
-                try {
-                    serverPort = s.nextInt();
-                } catch (Exception ee) {
-                    serverPort = 35002 + identifier;
+
+            File file = new File("Objects" + identifier + ".json");
+            //if the file do not exist: is the first time I'm creating it
+            if (file.length() == 0) {
+                //server port
+                int serverPort;
+                if (args.length == 0) {
+                    Scanner s = new Scanner(System.in);
+                    System.out.println("Port: ");
+                    try {
+                        serverPort = s.nextInt();
+                    } catch (Exception ee) {
+                        serverPort = 35002 + identifier;
+                    }
+
+                } else {
+                    serverPort = Integer.parseInt(args[0]);
                 }
+                System.out.println(serverPort);
+                controller.setServerPort(serverPort);
+                //end server port
+                Thread controllerThread = new Thread() {
+                    public void run() {
+                        controller.run();
+                    }
+                };
+                controllerThread.start();
 
             } else {
-                serverPort = Integer.parseInt(args[0]);
-            }
-            System.out.println(serverPort);
-            //end server port
 
-            Controller controller = new Controller(identifier, serverPort);
-            Thread controllerThread = new Thread(controller::run);
-            controllerThread.start();
+                //I'm recovering
+                System.out.println("Recovering.");
+                try {
+                    controller.recover();
+                } catch (IOException ee) {
+                    e.printStackTrace();
+                }
+                System.out.println("Recovering completed.");
+
+            }
 
             Farm f = controller.getFarm();
             f.addAnimal(new Animal("gatto"));
 
+            System.out.println(gson.toJson(controller));
 
         }
     }

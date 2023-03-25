@@ -9,7 +9,7 @@ class MessageBuffer
     static final Byte[] snapshotMessage =
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255};
-    private final HashMap<String, ArrayList<Byte>> incomingMessages;
+    private final Map<String, List<Byte>> incomingMessages;
     private final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
@@ -32,7 +32,7 @@ class MessageBuffer
      * @param name identifier of the connection
      * @param message message arrived from that connection in bytes
      */
-    synchronized void addMessage(String name, ArrayList<Byte> message)
+    synchronized void addMessage(String name, List<Byte> message)
     {
         incomingMessages.get(name).addAll(message);
     }
@@ -86,9 +86,5 @@ class MessageBuffer
             }
         }
         return -1;
-    }
-
-    public HashMap<String, ArrayList<Byte>> getIncomingMessages() {
-        return incomingMessages;
     }
 }

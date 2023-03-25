@@ -15,7 +15,7 @@ import java.util.Map;
 public class SnapshotCreator implements Serializable
 {
     @Serial private static final long serialVersionUID = 1032L;
-    private int serverPort;
+    static int serverPort=55831;
     private final List<Serializable> contextObjects;
     private transient MessageBuffer messages;
     private transient Map<String, ConnectionManager> nameToConnection;
@@ -23,7 +23,7 @@ public class SnapshotCreator implements Serializable
     private transient ConnectionAccepter connectionAccepter;
     private transient boolean snapshotting;
     private transient Map<String, Boolean> snapshotArrivedFrom;
-    private transient Map<String, ArrayList<Byte>> savedMessages;
+    private transient Map<String, List<Byte>> savedMessages;
     private int identifier;
 
     private Controller controller;
@@ -34,10 +34,10 @@ public class SnapshotCreator implements Serializable
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    static public SnapshotCreator snapshotDeserialization() throws FileNotFoundException
+    static public <T extends Thread & Serializable> SnapshotCreator snapshotDeserialization() throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
-        Map<String, ArrayList<Byte>> messages = null;
+        Map<String, List<Byte>> messages = null;
         //TODO: dovrei eseguire il metodo/i metodi che l'applicazione mi ha passato per riavviarla
         // i messaggi salvati li devo mettere nel buffer non in savedMessages
         // se non ci sono i file lancio FileNotFountException
@@ -48,7 +48,7 @@ public class SnapshotCreator implements Serializable
 
             Object inObj = fileIn.readObject();
             if(inObj instanceof Map)
-                messages = (Map<String, ArrayList<Byte>>) inObj;
+                messages = (Map<String, List<Byte>>) inObj;
             else
                 throw new ClassNotFoundException("Saved messages file was corrupted");
 
@@ -73,14 +73,10 @@ public class SnapshotCreator implements Serializable
         }
         synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
 
-        recoveredSystem.startController();
-        System.out.println("Recovered Controller is running.");
+        T controller = (T) recoveredSystem.getContextObjects().get(0);
+        controller.run();
         return recoveredSystem;
     }
-
-    public void startController(){
-        this.controller.run();
-    };
 
     public List<Serializable> getContextObjects() {
         return contextObjects;
@@ -90,16 +86,16 @@ public class SnapshotCreator implements Serializable
      * Constructor of the SnapshotCreator, which will add the main object to the context of the snapshot
      * (only the objects added to the context will be saved in the state of the program during the snapshot,
      * see method addEntityToContext)
-     * @param controller the main object of your program (the one which is most connected to the other objects),
+     * @param mainObject the main object of your program (the one which is most connected to the other objects),
      *                   it must be a thread in order to be executed after the recovery
      * @throws IOException
      */
-    public SnapshotCreator(Controller controller, int identifier, int serverPort) throws IOException
+    public SnapshotCreator(Controller mainObject, int identifier, int serverPort) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
     {
         contextObjects = new ArrayList<>();
-        contextObjects.add(controller);
+        contextObjects.add(mainObject);
         messages = new MessageBuffer(this);
         nameToConnection = new HashMap<>();
         connections = new ArrayList<>();
@@ -107,10 +103,9 @@ public class SnapshotCreator implements Serializable
         connectionAccepter.start();
         snapshotting = false;
         snapshotArrivedFrom = new HashMap<>();
-        savedMessages = new HashMap<String, ArrayList<Byte>>();
+        savedMessages = new HashMap<>();
         this.serverPort = serverPort;
         this.identifier = identifier;
-        this.controller = controller;
 
     }
 
@@ -142,7 +137,7 @@ public class SnapshotCreator implements Serializable
     synchronized public String connect_to(InetAddress address, Integer p) throws IOException
     {
         String name = address.toString();
-        Socket socket = new Socket(address, p);
+        Socket socket = new Socket(address, serverPort);
         ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
         connections.add(newConnectionM);
         messages.addClient(name);
@@ -185,7 +180,7 @@ public class SnapshotCreator implements Serializable
     /**
      * Begin the snapshot by saving the state and sending the snapshot message to all other nodes
      */
-    public synchronized void startSnapshot()
+    synchronized void startSnapshot()
     {
         saveState();
         savedMessages.clear();
@@ -274,7 +269,7 @@ public class SnapshotCreator implements Serializable
         return snapshotting;
     }
 
-    synchronized public void saveState()
+    synchronized private void saveState()
     {
         try {
             File snapshotFile = new File("lastSnapshot");
@@ -316,7 +311,7 @@ public class SnapshotCreator implements Serializable
         connectionAccepter.start();
         snapshotting = false;
         snapshotArrivedFrom = new HashMap<>();
-        savedMessages = new HashMap<String, ArrayList<Byte>>();
+        savedMessages = new HashMap<>();
         Map<String, InetAddress> nameToIP = (HashMap<String, InetAddress>) ois.readObject();
         for(String name: nameToIP.keySet())
         {
@@ -349,9 +344,5 @@ public class SnapshotCreator implements Serializable
             System.out.println(s);
         }
         return s;
-    }
-
-    public int getServerPort() {
-        return serverPort;
     }
 }
