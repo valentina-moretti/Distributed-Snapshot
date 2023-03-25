@@ -60,14 +60,15 @@ class MessageBuffer
         }
         else
         {
-            if(snapPosition!=-1) {
+            if(snapPosition!=-1)
+            {
                 snapshotManager.startSnapshot();
                 snapshotManager.messageDuringSnapshot(name,
                         new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
                 snapshotManager.snapshotMessageArrived(name);
             }
         }
-        //incomingMessages.get(name).clear();
+        incomingMessages.get(name).clear();
         return new ByteArrayInputStream(input);
     }
 

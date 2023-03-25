@@ -15,20 +15,25 @@ import java.util.*;
 public class SnapshotCreator
 {
     static int serverPort;
-    //todo:non usiamo piu i serializable
-    private ArrayList<Object> contextObjects;
+    private List<Object> contextObjects;
     private Controller controller;
-    private transient MessageBuffer messages;
+    private MessageBuffer messages;
     private List<String> connectionNames;
-    private transient Map<String, ConnectionManager> nameToConnection;
-    private transient List<ConnectionManager> connections;
-    private transient ConnectionAccepter connectionAccepter;
-    private transient JsonConverter jsonConverter;
+    private Map<String, ConnectionManager> nameToConnection;
+    private List<ConnectionManager> connections;
+    private ConnectionAccepter connectionAccepter;
+    private JsonConverter jsonConverter;
     private boolean snapshotting;
-    private transient Map<String, Boolean> snapshotArrivedFrom;
+    private Map<String, Boolean> snapshotArrivedFrom;
     private Map<String, ArrayList<Byte>> savedMessages;
     static int identifier;
 
+    /**
+     * @return a SnapshotCreator object reconstructed from the file named "lastSnapshot"
+     * created during the last snapshot
+     * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
+     * snapshot was not found or was corrupted
+     */
     static public SnapshotCreator snapshotDeserialization(int identifier) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
@@ -96,6 +101,14 @@ public class SnapshotCreator
         this.controller.run();
     };
 
+    /**
+     * Constructor of the SnapshotCreator, which will add the controller to the context of the snapshot
+     * (only the objects added to the context will be saved in the state of the program during the snapshot,
+     * see method addEntityToContext)
+     * @param controller the main object of your program (the one which is most connected to the other objects),
+     *                   it must be a thread in order to be executed after the recovery
+     * @throws IOException
+     */
     public SnapshotCreator(Controller controller, int identifier, int serverPort) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
@@ -116,45 +129,12 @@ public class SnapshotCreator
         this.controller = controller;
 
     }
-/*
-    void Recover() throws IOException {
-        Gson gson = new Gson();
 
 
-        //Port
-        BufferedReader in = new BufferedReader(new FileReader("Port"+identifier+".json"));
-        SnapshotCreator.serverPort = gson.fromJson(in, Integer.class);
-
-
-        //Objects
-        in = new BufferedReader(new FileReader("Objects"+identifier+".json"));
-        this.contextObjects = gson.fromJson(in, new TypeToken<ArrayList<Object>>(){}.getType());
-
-        //Connections
-        in = new BufferedReader(new FileReader("Connections"+identifier+".json"));
-        ArrayList<String> oldConnections = gson.fromJson(in, new TypeToken<ArrayList<String>>(){}.getType());
-
-        for (String connection:
-                oldConnections) {
-            connection = connection.substring(1);
-            String[] ipAndPort = connection.split("-");
-            try{
-                connect_to(InetAddress.getByName(ipAndPort[0]), Integer.valueOf(ipAndPort[1]));
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-
-        }
-
-        //Messages
-        in = new BufferedReader(new FileReader("Messages"+identifier+".json"));
-        this.savedMessages = gson.fromJson(in, new TypeToken<Map<String, ArrayList<Byte>>>(){}.getType());
-
-    }
-
- */
-
-
+    /**
+     * method used by the ConnectionAccepter when a new connection is accepted by the ServerSocket
+     * @param connection new Socket
+     */
     synchronized void connectionAccepted(Socket connection)
     {
         String name = connection.getInetAddress().toString() + "-" + connection.getPort();
@@ -166,6 +146,14 @@ public class SnapshotCreator
         newConnectionM.start();
     }
 
+    /**
+     * Use this method to connect to other nodes knowing their address; if a new connection is established
+     * without the usage of this method the communication of that connection will not be registered in the
+     * snapshot
+     * @param address
+     * @return a String identifier of the connection created
+     * @throws IOException
+     */
     synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
         String name = address.toString() + "-" + port;
@@ -204,30 +192,49 @@ public class SnapshotCreator
         }
     }
 
+    /**
+     * getter for the input stream of a specific connection
+     * @param connectionName string identifier of the connection
+     * @return the input stream
+     */
     synchronized public InputStream getInputStream(String connectionName)
     {
         return new MyInputStream(messages, connectionName);
     }
 
-    synchronized public OutputStream getOutputStream(String name) throws IOException
+    /**
+     * getter for the output stream of a specific connection
+     * @param connectionName string identifier of the connection
+     * @return the output stream
+     * @throws IOException
+     */
+    synchronized public OutputStream getOutputStream(String connectionName) throws IOException
     {
-        return new MyOutputStream(this, nameToConnection.get(name).getOutputStream());
+        return new MyOutputStream(this, nameToConnection.get(connectionName).getOutputStream());
     }
 
+    /**
+     * add a serializable object to the context of the snapshot.
+     * Only the objects added to the context will be saved in the state of the program during the snapshot
+     * @param newObject
+     */
     synchronized public void addEntityToContext(Object newObject)
     {
         contextObjects.add(newObject);
     }
 
+    /**
+     * Begin the snapshot by saving the state and sending the snapshot message to all other nodes
+     */
     public synchronized void startSnapshot()
     {
         System.out.println("Starting snapshot");
         saveState();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
-        for(String name: connectionNames){
-            savedMessages.put(name, new ArrayList<>());
-            snapshotArrivedFrom.put(name, false);
+        for(String connectionName : connectionNames){
+            savedMessages.put(connectionName, new ArrayList<>());
+            snapshotArrivedFrom.put(connectionName, false);
         }
         snapshotting = true;
 
@@ -463,10 +470,4 @@ public class SnapshotCreator
         }
         return s;
     }
-
-    public List<ConnectionManager> getConnections() {
-        return connections;
-    }
-
-
 }

@@ -36,7 +36,8 @@ class ConnectionManager extends Thread
         List<Byte> readMessage = new ArrayList<>();
         while (socket.getInputStream().available()!=0)
             readMessage.add((byte) socket.getInputStream().read());
-        if(readMessage.size()>0) {
+        if(readMessage.size()>0)
+        {
             System.out.println("Message from " + name + ":");
             System.out.println(readMessage);
             buffer.addMessage(name, readMessage);
