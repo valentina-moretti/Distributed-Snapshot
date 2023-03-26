@@ -163,22 +163,26 @@ public class SnapshotCreator
         String port;
         Socket socket;
         String[] strings;
+        String my_address=InetAddress.getLocalHost().toString();
+
         ConnectionManager newConnectionM;
         for(String name: connectionNames){
             strings=name.split("-");
             address=strings[0];
             port=strings[1];
-            System.out.println(address.substring(1));
-            System.out.println(port);
-            System.out.println(InetAddress.getByName(address.substring(1)));
-            System.out.println(Integer.parseInt(port));
-            socket = new Socket(InetAddress.getByName(address.substring(1)), Integer.parseInt(port));
-            connectionNames.add(name);
-            newConnectionM = new ConnectionManager(socket, name, messages);
-            connections.add(newConnectionM);
-            messages.addClient(name);
-            nameToConnection.put(name, newConnectionM);
-            newConnectionM.start();
+            if(Integer.valueOf(address+port)>Integer.valueOf(my_address+serverPort)) {
+                System.out.println(address.substring(1));
+                System.out.println(port);
+                System.out.println(InetAddress.getByName(address.substring(1)));
+                System.out.println(Integer.parseInt(port));
+                socket = new Socket(InetAddress.getByName(address.substring(1)), Integer.parseInt(port));
+                connectionNames.add(name);
+                newConnectionM = new ConnectionManager(socket, name, messages);
+                connections.add(newConnectionM);
+                messages.addClient(name);
+                nameToConnection.put(name, newConnectionM);
+                newConnectionM.start();
+            }
         }
     }
 
