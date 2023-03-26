@@ -16,16 +16,15 @@ public class SnapshotCreator
 {
     static int serverPort;
     private List<Object> contextObjects;
-    private Controller controller;
-    private MessageBuffer messages;
+    private ControllerInterface controller;
+    private transient MessageBuffer messages;
     private List<String> connectionNames;
-    private Map<String, ConnectionManager> nameToConnection;
-    private List<ConnectionManager> connections;
-    private ConnectionAccepter connectionAccepter;
-    private JsonConverter jsonConverter;
+    private transient Map<String, ConnectionManager> nameToConnection;
+    private transient List<ConnectionManager> connections;
+    private transient ConnectionAccepter connectionAccepter;
     private boolean snapshotting;
     private Map<String, Boolean> snapshotArrivedFrom;
-    private Map<String, ArrayList<Byte>> savedMessages;
+    private transient Map<String, ArrayList<Byte>> savedMessages;
     static int identifier;
 
     /**
@@ -99,7 +98,7 @@ public class SnapshotCreator
 
     public void startController(){
         this.controller.run();
-    };
+    }
 
     /**
      * Constructor of the SnapshotCreator, which will add the controller to the context of the snapshot
@@ -109,7 +108,7 @@ public class SnapshotCreator
      *                   it must be a thread in order to be executed after the recovery
      * @throws IOException
      */
-    public SnapshotCreator(Controller controller, int identifier, int serverPort) throws IOException
+    public SnapshotCreator(ControllerInterface controller, int identifier, int serverPort) throws IOException
     // TODO: there should be another parameter: the function to
     //  be executed when reloading from a previous snapshot
     {
@@ -305,31 +304,6 @@ public class SnapshotCreator
         {
             ioException.printStackTrace();
         }
-
-        /*
-        try {
-
-
-            File messagesFile = new File("savedMessages"+identifier+".txt");
-            if(!messagesFile.createNewFile())
-            {
-                if(!messagesFile.delete())
-                    throw new RuntimeException("Failed to create savedMessages file");
-                if(!messagesFile.createNewFile())
-                    throw new RuntimeException("Failed to create savedMessages file");
-            }
-            FileOutputStream file = new FileOutputStream(messagesFile);
-            ObjectOutputStream fileOut = new ObjectOutputStream(file);
-
-            fileOut.writeObject(savedMessages);
-
-            fileOut.close();
-            file.close();
-
-
-        }catch (IOException e) { throw new RuntimeException("Error in creating savedMessages file!"); }
-
-             */
         savedMessages.clear();
     }
 
@@ -367,88 +341,6 @@ public class SnapshotCreator
         {
             ioException.printStackTrace();
         }
-
-            /*
-        try {
-            File snapshotFile = new File("lastSnapshot");
-            if(!snapshotFile.createNewFile())
-            {
-                if(!snapshotFile.delete())
-                    throw new RuntimeException("Failed to create snapshotFile");
-                if(!snapshotFile.createNewFile())
-                    throw new RuntimeException("Failed to create snapshotFile");
-            }
-            FileOutputStream file = new FileOutputStream(snapshotFile);
-            ObjectOutputStream fileOut = new ObjectOutputStream(file);
-
-            fileOut.writeObject(this);
-
-            file.close();
-            file.close();
-
-
-        }catch (IOException e) { throw new RuntimeException("Error in creating snapshot file!"); }
-
-             */
-    }
-
-
-    public void SerializeMessages(){
-        Gson gson = new Gson();
-
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Messages"+identifier+".json"));
-            out.write(gson.toJson(savedMessages));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void SerializeObjects(){
-        Gson gson = new Gson();
-        String serializedObjects = gson.toJson(contextObjects);
-
-        // Scrittura su file
-        File file = new File("Objects" + identifier + ".json");
-        try (FileOutputStream fos = new FileOutputStream(file);
-             OutputStreamWriter osw = new OutputStreamWriter(fos);
-             BufferedWriter writer = new BufferedWriter(osw)) {
-            writer.write(serializedObjects);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    public void SerializeConnections(){
-        Gson gson = new Gson();
-        ArrayList<String> conn = new ArrayList<>();
-        for (ConnectionManager connectionManager :
-                connections) {
-            conn.add(connectionManager.getIp());
-        }
-
-        // Method for serialization of object
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Connections"+identifier+".json"));
-            out.write(gson.toJson(conn));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("Port"+identifier+".json"));
-            out.write(gson.toJson(serverPort));
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
     public Map<String, ConnectionManager> getNameToConnection() {

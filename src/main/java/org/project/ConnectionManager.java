@@ -11,7 +11,7 @@ import java.util.List;
  */
 class ConnectionManager extends Thread
 {
-    private final Socket socket;
+    private transient final Socket socket;
     private final MessageBuffer buffer;
     private final String name;
 

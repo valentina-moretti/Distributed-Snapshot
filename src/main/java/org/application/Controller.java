@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-public class Controller implements Serializable {
+public class Controller {
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;

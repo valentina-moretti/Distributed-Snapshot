@@ -9,8 +9,8 @@ import java.net.Socket;
  */
 class ConnectionAccepter extends Thread
 {
-    private final ServerSocket serverSocket;
-    private final SnapshotCreator snapC;
+    private transient final ServerSocket serverSocket;
+    private transient final SnapshotCreator snapC;
 
     /**
      * @param snap parameter used in order to add a new socket (a connection accepted) to che SnapshotCreator

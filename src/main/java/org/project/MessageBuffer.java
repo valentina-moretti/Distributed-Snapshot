@@ -10,7 +10,7 @@ class MessageBuffer
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255};
     private final Map<String, List<Byte>> incomingMessages;
-    private final SnapshotCreator snapshotManager;
+    private transient final SnapshotCreator snapshotManager;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
     {
