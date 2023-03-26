@@ -56,7 +56,7 @@ public class Main {
             //end server port
 
             Controller controller = new Controller(identifier, serverPort);
-            Thread controllerThread = new Thread(controller::run);
+            Thread controllerThread = new Thread(controller);
             controllerThread.start();
 
             Farm f = controller.getFarm();

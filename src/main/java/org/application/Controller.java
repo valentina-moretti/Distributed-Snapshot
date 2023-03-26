@@ -1,21 +1,14 @@
 package org.application;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
+import org.project.ControllerInterface;
 import org.project.SnapshotCreator;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.InetAddress;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
-public class Controller {
+public class Controller implements ControllerInterface {
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
@@ -53,10 +46,10 @@ public class Controller {
                     }
 
                 } else if (s.equals("connections")) {
-                    System.out.println(sc.getNameToConnection());
+                    System.out.println(sc.getConnections());
                 } else if (s.equals("give animal")) {
                     System.out.println("Select connection from: ");
-                    System.out.println(sc.getNameToConnection());
+                    System.out.println(sc.getConnections());
                     System.out.println("/ip-port: ");
                     s = console.readLine();
                     OutputStream outputStream = sc.getOutputStream(s);
@@ -68,20 +61,21 @@ public class Controller {
                     //todo come si danno ordini regalo animale
 
                 } else if (s.equals("read")) {
-                    s= sc.readMessages();
-                    if(s!= null && s.length()>11) {
-                        if (s.substring(0, 11).equals("Add animal ")) {
-                            String animal = s.split("Add animal")[1];
+                    System.out.println("Select connection from: ");
+                    System.out.println(sc.getConnections());
+                    System.out.println("/ip-port: ");
+                    s = console.readLine();
+                    InputStream in = sc.getInputStream(s);
+                    Scanner scanner = new Scanner(in).useDelimiter("\\A");
+                    String result = scanner.hasNext() ? scanner.next() : "";
+                    if(result!= null && result.length()>11) {
+                        if (result.startsWith("Add animal ")) {
+                            String animal = result.split("Add animal")[1];
                             this.farm.addAnimal(new Animal(animal));
                         }
                     }
                 } else if (s.equals("ip")) {
                     System.out.println("Your IP: " + InetAddress.getLocalHost());
-                }
-                // per debug
-                else if (s.equals("serialize")) {
-                    System.out.println("Serialization");
-                    Serialize();
                 } else if (s.equals("snap")) {
                     sc.startSnapshot();
                 } else if (s.equals("farm")) {
@@ -94,6 +88,48 @@ public class Controller {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void Serialize() {
+        Gson gson = new Gson();
+        String serializedObjects = gson.toJson(this);
+        File file = new File("Controller"+serverPort+".txt");
+        try (FileOutputStream fos = new FileOutputStream(file);
+             OutputStreamWriter osw = new OutputStreamWriter(fos);
+             BufferedWriter writer = new BufferedWriter(osw))
+        {
+            writer.write(serializedObjects);
+        } catch (IOException fileNotFoundException)
+        {
+            fileNotFoundException.printStackTrace();
+        }
+    }
+
+    @Override
+    public ControllerInterface Deserialize() throws FileNotFoundException {
+        Gson gson = new Gson();
+        ControllerInterface controller = null;
+        try{
+        File objectsFile = new File("lastSnapshot"+serverPort+".txt");
+        Reader reader = new FileReader(objectsFile);
+        Controller inObj = gson.fromJson(reader, Controller.class);
+        if(inObj != null)
+            controller = inObj;
+        else {
+            System.out.println("Controller file was corrupted");
+            throw new ClassNotFoundException("Controller file was corrupted");
+        }
+        }catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            throw new FileNotFoundException("File was corrupted");
+        }
+        return controller;
+    }
+
+    @Override
+    public void SetSnapshotCreator(SnapshotCreator snapshotCreator) {
+        this.sc=snapshotCreator;
     }
 
 
@@ -127,16 +163,6 @@ public class Controller {
         this.serverPort = serverPort;
     }
 
-
-    // For testing
-
-    void Serialize() {
-        sc.saveState();
-    }
-
-    public void setSc(SnapshotCreator sc){
-        this.sc=sc;
-    }
 
 
     /*

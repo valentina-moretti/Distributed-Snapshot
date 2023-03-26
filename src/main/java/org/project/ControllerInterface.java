@@ -1,8 +1,12 @@
 package org.project;
 
-public interface ControllerInterface
+import java.io.FileNotFoundException;
+
+public interface ControllerInterface extends Runnable
 {
     void run();
-    String toJson();
-    ControllerInterface fromJson();
+    void Serialize();
+    ControllerInterface Deserialize() throws FileNotFoundException;
+
+    void SetSnapshotCreator(SnapshotCreator snapshotCreator);
 }

@@ -2,13 +2,11 @@ package org.project;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.application.Controller;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
@@ -59,13 +57,7 @@ public class SnapshotCreator
 
             File objectsFile = new File("lastSnapshot"+identifier+".txt");
             reader = new FileReader(objectsFile);
-            inObj = gson.fromJson(reader, SnapshotCreator.class);
-            if(inObj instanceof SnapshotCreator)
-                recoveredSystem = (SnapshotCreator) inObj;
-            else {
-                System.out.println("State file was corrupted");
-                throw new ClassNotFoundException("State file was corrupted");
-            }
+            recoveredSystem = gson.fromJson(reader, SnapshotCreator.class);
 
         }catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -73,7 +65,9 @@ public class SnapshotCreator
         }
         synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
 
-        recoveredSystem.controller.setSc(recoveredSystem);
+        ControllerInterface recoveredController = recoveredSystem.controller.Deserialize();
+
+        recoveredController.SetSnapshotCreator(recoveredSystem);
         recoveredSystem.messages = new MessageBuffer(recoveredSystem);
         recoveredSystem.nameToConnection = new HashMap<>();
         recoveredSystem.connections = new ArrayList<>();
@@ -91,14 +85,11 @@ public class SnapshotCreator
         recoveredSystem.snapshotArrivedFrom = new HashMap<>();
         recoveredSystem.identifier = identifier;
 
-        recoveredSystem.startController();
+        new Thread(recoveredController).start();
         System.out.println("Recovered Controller is running.");
         return recoveredSystem;
     }
 
-    public void startController(){
-        this.controller.run();
-    }
 
     /**
      * Constructor of the SnapshotCreator, which will add the controller to the context of the snapshot
@@ -332,22 +323,17 @@ public class SnapshotCreator
              BufferedWriter writer = new BufferedWriter(osw))
         {
             writer.write(serializedObjects);
-        }
-        catch (FileNotFoundException fileNotFoundException)
+        } catch (IOException fileNotFoundException)
         {
             fileNotFoundException.printStackTrace();
         }
-        catch (IOException ioException)
-        {
-            ioException.printStackTrace();
-        }
     }
 
-    public Map<String, ConnectionManager> getNameToConnection() {
-        return nameToConnection;
+    public List<String> getConnections() {
+        return this.connectionNames;
     }
 
-
+/*
     public String readMessages(){
         HashMap<String, ArrayList<Byte>> m = messages.getIncomingMessages();
         String s=null;
@@ -362,4 +348,6 @@ public class SnapshotCreator
         }
         return s;
     }
+
+ */
 }
