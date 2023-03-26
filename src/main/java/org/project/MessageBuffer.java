@@ -39,7 +39,6 @@ class MessageBuffer
 
     synchronized InputStream getInputStream(String name)
     {
-        System.out.println("getInputStream");
         byte[] input = new byte[incomingMessages.get(name).size()];
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);

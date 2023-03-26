@@ -60,10 +60,10 @@ public class SnapshotCreator
             recoveredSystem = gson.fromJson(reader, SnapshotCreator.class);
 
         }catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             throw new FileNotFoundException("File was corrupted");
         }
-        synchronized (recoveredSystem) { recoveredSystem.savedMessages = messages; };
+        synchronized (Objects.requireNonNull(recoveredSystem)) { recoveredSystem.savedMessages = messages; };
 
         ControllerInterface recoveredController = recoveredSystem.controller.Deserialize();
 
@@ -83,7 +83,7 @@ public class SnapshotCreator
         }
         recoveredSystem.connectionAccepter.start();
         recoveredSystem.snapshotArrivedFrom = new HashMap<>();
-        recoveredSystem.identifier = identifier;
+        SnapshotCreator.identifier = identifier;
 
         new Thread(recoveredController).start();
         System.out.println("Recovered Controller is running.");
