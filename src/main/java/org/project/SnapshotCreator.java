@@ -239,7 +239,8 @@ public class SnapshotCreator
         {
             try {
                 c.getOutputStream().write(snapshotMessage);
-            } catch (IOException e) { throw new RuntimeException("IOException"); }
+            } catch (IOException e) { System.out.println("The other one has disconnected," +
+                    "can't send snapshot message to him"); }
         }
     }
 
