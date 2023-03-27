@@ -3,6 +3,7 @@ package org.application;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.project.ControllerInterface;
 import org.project.SnapshotCreator;
 
 import java.io.*;

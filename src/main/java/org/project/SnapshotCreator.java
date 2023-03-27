@@ -31,7 +31,7 @@ public class SnapshotCreator
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    static public SnapshotCreator snapshotDeserialization(ControllerInterface recoveredController, int identifier) throws FileNotFoundException
+    static public SnapshotCreator snapshotDeserialization(int identifier) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
@@ -65,7 +65,7 @@ public class SnapshotCreator
         }
         synchronized (Objects.requireNonNull(recoveredSystem)) { recoveredSystem.savedMessages = messages; };
 
-        recoveredController = recoveredSystem.controller.Deserialize();
+        ControllerInterface recoveredController = recoveredSystem.controller.Deserialize();
 
         recoveredController.SetSnapshotCreator(recoveredSystem);
         recoveredSystem.messages = new MessageBuffer(recoveredSystem);
