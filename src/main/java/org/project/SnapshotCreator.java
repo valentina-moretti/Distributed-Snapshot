@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.*;
@@ -148,41 +149,51 @@ public class SnapshotCreator
     synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
         String name = address.toString() + "-" + port;
-        Socket socket = new Socket(address, port);
-        connectionNames.add(name);
-        ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
-        connections.add(newConnectionM);
-        messages.addClient(name);
-        nameToConnection.put(name, newConnectionM);
-        newConnectionM.start();
-        return name;
+        Socket socket = null;
+        try {
+            socket = new Socket(address, port);
+            ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+            connectionNames.add(name);
+            connections.add(newConnectionM);
+            messages.addClient(name);
+            nameToConnection.put(name, newConnectionM);
+            newConnectionM.start();
+            return name;
+        } catch (IOException e){
+            throw e;
+        }
+
     }
 
     synchronized public void reconnect(List<String> connectionNames) throws IOException
     {
+        List<String> oldConnections = connectionNames.stream().toList();
+        connectionNames.clear();
         String address;
         String port;
-        Socket socket;
+        Socket socket = null;
         String[] strings;
-        String my_address=InetAddress.getLocalHost().toString();
+        String my_address=InetAddress.getLocalHost().toString().split("/")[1].split("\\.")[3];
 
-        ConnectionManager newConnectionM;
-        for(String name: connectionNames){
+        for(String name: oldConnections){
+            name = name.split("/")[1];
             strings=name.split("-");
-            address=strings[0];
+            address=strings[0].split("\\.")[3];
             port=strings[1];
-            if(Integer.valueOf(address+port)>Integer.valueOf(my_address+serverPort)) {
+
+            if(Integer.parseInt(address+port)>Integer.parseInt(my_address+serverPort)) {
+                /*
                 System.out.println(address.substring(1));
                 System.out.println(port);
                 System.out.println(InetAddress.getByName(address.substring(1)));
                 System.out.println(Integer.parseInt(port));
-                socket = new Socket(InetAddress.getByName(address.substring(1)), Integer.parseInt(port));
-                connectionNames.add(name);
-                newConnectionM = new ConnectionManager(socket, name, messages);
-                connections.add(newConnectionM);
-                messages.addClient(name);
-                nameToConnection.put(name, newConnectionM);
-                newConnectionM.start();
+
+                 */
+                try {
+                    connect_to(InetAddress.getByName(address.substring(1)), Integer.parseInt(port));
+                } catch (ConnectException e){
+                    System.out.println("Connection refused from " + name);
+                }
             }
         }
     }

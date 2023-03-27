@@ -51,6 +51,8 @@ class MessageBuffer
                 snapshotManager.messageDuringSnapshot
                         (name, new ArrayList<>(incomingMessages.get(name).subList(0, snapPosition)));
                 snapshotManager.snapshotMessageArrived(name);
+                // Rimuovo il messaggio di snapshot perchè se faccio read rompe tutto
+                incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size()).clear();
             }
             else
             {
@@ -65,6 +67,10 @@ class MessageBuffer
                 snapshotManager.messageDuringSnapshot(name,
                         new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
                 snapshotManager.snapshotMessageArrived(name);
+                // Rimuovo il messaggio di snapshot perchè se faccio read rompe tutto
+                incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size()).clear();
+
+
             }
         }
         //incomingMessages.get(name).clear();
