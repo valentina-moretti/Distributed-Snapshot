@@ -14,7 +14,7 @@ public class SnapshotCreator
 {
     static int serverPort;
     private List<Object> contextObjects;
-    private ControllerInterface controller;
+    private transient ControllerInterface controller;
     private transient MessageBuffer messages;
     private List<String> connectionNames;
     private transient Map<String, ConnectionManager> nameToConnection;
@@ -31,7 +31,7 @@ public class SnapshotCreator
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    static public SnapshotCreator snapshotDeserialization(int identifier) throws FileNotFoundException
+    static public SnapshotCreator snapshotDeserialization(ControllerInterface recoveredController, int identifier) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
@@ -65,7 +65,7 @@ public class SnapshotCreator
         }
         synchronized (Objects.requireNonNull(recoveredSystem)) { recoveredSystem.savedMessages = messages; };
 
-        ControllerInterface recoveredController = recoveredSystem.controller.Deserialize();
+        recoveredController = recoveredSystem.controller.Deserialize();
 
         recoveredController.SetSnapshotCreator(recoveredSystem);
         recoveredSystem.messages = new MessageBuffer(recoveredSystem);
@@ -224,6 +224,7 @@ public class SnapshotCreator
     {
         System.out.println("Starting snapshot");
         saveState();
+        controller.Serialize();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
         for(String connectionName : connectionNames){
