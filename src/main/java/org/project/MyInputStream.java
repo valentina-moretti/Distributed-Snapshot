@@ -1,7 +1,10 @@
 package org.project;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 class MyInputStream extends InputStream
 {
@@ -17,12 +20,28 @@ class MyInputStream extends InputStream
     }
 
     @Override
-    synchronized public int read() throws IOException
-    {
-        if(inputStream.available()==0)
-            inputStream = messageBuffer.getInputStream(name);
-        return inputStream.read();
+    synchronized public int read() throws IOException {
+        if (inputStream.available() == 0) {
+            //System.out.println("Original InputStream is not available. \nCreating a new one from messages");
+            if (messageBuffer.getMessages(name).size()==0) return -1;
+            List<Byte> bytes = messageBuffer.getMessages(name);
+            byte[] arrayByte = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++) {
+                arrayByte[i] = bytes.get(i);
+            }
+            this.inputStream = new ByteArrayInputStream(arrayByte);
+            messageBuffer.getMessages(name).clear();
+            if(this.inputStream.available()==0) return -1;
+        }
+        //System.out.println("Available bytes: " + inputStream.available());
+        int byteRead = inputStream.read();
+        if (byteRead == -1 && inputStream.available() == 0) {
+            // il nuovo stream è terminato
+            return -1;
+        }
+        return byteRead;
     }
+
 
     @Override
     public boolean markSupported()

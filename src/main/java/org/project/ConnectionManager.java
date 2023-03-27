@@ -41,7 +41,9 @@ class ConnectionManager extends Thread
             System.out.println("Message from " + name + ":");
             System.out.println(readMessage);
             buffer.addMessage(name, readMessage);
+            System.out.println("Available before getInputStream: " + (socket.getInputStream().available()!=0));
             buffer.getInputStream(name);
+            System.out.println("Available after getInputStream: " + (socket.getInputStream().available()!=0));
         }
 
     }

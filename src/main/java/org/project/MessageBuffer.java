@@ -67,7 +67,7 @@ class MessageBuffer
                 snapshotManager.snapshotMessageArrived(name);
             }
         }
-        incomingMessages.get(name).clear();
+        //incomingMessages.get(name).clear();
         return new ByteArrayInputStream(input);
     }
 
@@ -90,5 +90,9 @@ class MessageBuffer
             }
         }
         return -1;
+    }
+
+    public List<Byte> getMessages(String name){
+        return incomingMessages.get(name);
     }
 }

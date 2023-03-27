@@ -6,16 +6,19 @@ import org.project.SnapshotCreator;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Controller implements ControllerInterface {
     private Farm farm;
     private int serverPort;
     private transient SnapshotCreator sc;
+    private final int identifier;
 
 
     public Controller(int identifier, int serverPort) {
-
+        this.identifier = identifier;
         this.serverPort = serverPort;
         this.farm = new Farm(this);
         try {
@@ -48,10 +51,15 @@ public class Controller implements ControllerInterface {
                 } else if (s.equals("connections")) {
                     System.out.println(sc.getConnections());
                 } else if (s.equals("give animal")) {
-                    System.out.println("Select connection from: ");
-                    System.out.println(sc.getConnections());
-                    System.out.println("/ip-port: ");
-                    s = console.readLine();
+                    if(sc.getConnections().size()==1){
+                        s = sc.getConnections().get(0);
+                    }
+                    else {
+                        System.out.println("Select connection from: ");
+                        System.out.println(sc.getConnections());
+                        System.out.println("/ip-port: ");
+                        s = console.readLine();
+                    }
                     OutputStream outputStream = sc.getOutputStream(s);
                     PrintWriter out = new PrintWriter(outputStream, true);
                     System.out.println("Which animal do you want to donate? ");
@@ -61,19 +69,31 @@ public class Controller implements ControllerInterface {
                     //todo come si danno ordini regalo animale
 
                 } else if (s.equals("read")) {
-                    System.out.println("Select connection from: ");
-                    System.out.println(sc.getConnections());
-                    System.out.println("/ip-port: ");
-                    s = console.readLine();
+                    if(sc.getConnections().size()==1){
+                        s = sc.getConnections().get(0);
+                    }
+                    else {
+                        System.out.println("Select connection from: ");
+                        System.out.println(sc.getConnections());
+                        System.out.println("/ip-port: ");
+                        s = console.readLine();
+                    }
                     InputStream in = sc.getInputStream(s);
-                    Scanner scanner = new Scanner(in).useDelimiter("\\A");
-                    String result = scanner.hasNext() ? scanner.next() : "";
-                    if(result!= null && result.length()>11) {
+                    BufferedInputStream bis = new BufferedInputStream(in);
+                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                    for (int result = bis.read(); result != -1; result = bis.read()) {
+                        buf.write((byte) result);
+                    }
+                    String result = buf.toString(StandardCharsets.UTF_8);
+                    System.out.println(result);
+
+                    if (result.length() > 11) {
                         if (result.startsWith("Add animal ")) {
-                            String animal = result.split("Add animal")[1];
+                            String animal = result.split("Add animal ")[1];
                             this.farm.addAnimal(new Animal(animal));
                         }
                     }
+
                 } else if (s.equals("ip")) {
                     System.out.println("Your IP: " + InetAddress.getLocalHost());
                 } else if (s.equals("snap")) {
@@ -83,6 +103,23 @@ public class Controller implements ControllerInterface {
                             this.farm.getAnimalList()) {
                         System.out.println(a.getName());
                     }
+                } else if (s.equals("auto")) {
+
+                    Scanner scanner = new Scanner(System.in);
+                    System.out.println("Port: ");
+                    Integer p = null;
+                    try {
+                        p = scanner.nextInt();
+                        sc.connect_to(InetAddress.getLocalHost(), p);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    OutputStream outputStream = sc.getOutputStream(sc.getConnections().get(0));
+                    PrintWriter out = new PrintWriter(outputStream, true);
+                    out.println("Add animal pollo");
+                    System.out.println("Pollo sent.");
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -94,7 +131,7 @@ public class Controller implements ControllerInterface {
     public void Serialize() {
         Gson gson = new Gson();
         String serializedObjects = gson.toJson(this);
-        File file = new File("Controller"+serverPort+".txt");
+        File file = new File("Controller"+identifier+".txt");
         try (FileOutputStream fos = new FileOutputStream(file);
              OutputStreamWriter osw = new OutputStreamWriter(fos);
              BufferedWriter writer = new BufferedWriter(osw))
@@ -104,27 +141,6 @@ public class Controller implements ControllerInterface {
         {
             fileNotFoundException.printStackTrace();
         }
-    }
-
-    @Override
-    public ControllerInterface Deserialize() throws FileNotFoundException {
-        Gson gson = new Gson();
-        ControllerInterface controller = null;
-        try{
-        File objectsFile = new File("lastSnapshot"+serverPort+".txt");
-        Reader reader = new FileReader(objectsFile);
-        Controller inObj = gson.fromJson(reader, Controller.class);
-        if(inObj != null)
-            controller = inObj;
-        else {
-            System.out.println("Controller file was corrupted");
-            throw new ClassNotFoundException("Controller file was corrupted");
-        }
-        }catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new FileNotFoundException("File was corrupted");
-        }
-        return controller;
     }
 
     @Override

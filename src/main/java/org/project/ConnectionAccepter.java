@@ -26,8 +26,7 @@ class ConnectionAccepter extends Thread
     public void run()
     {
         Socket connection;
-        System.out.println("Ready to accept on port " + SnapshotCreator.serverPort);
-        System.out.println(serverSocket);
+        System.out.println(serverSocket.getLocalPort());
         while (true)
         {
             try {
