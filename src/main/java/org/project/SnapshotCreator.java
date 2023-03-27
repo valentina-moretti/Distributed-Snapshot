@@ -178,10 +178,11 @@ public class SnapshotCreator
         for(String name: oldConnections){
             name = name.split("/")[1];
             strings=name.split("-");
-            address=strings[0].split("\\.")[3];
+            address=strings[0];
+            String lastIp = address.split("\\.")[3];
             port=strings[1];
 
-            if(Integer.parseInt(address+port)>Integer.parseInt(my_address+serverPort)) {
+            if(Integer.parseInt(lastIp+port)>Integer.parseInt(my_address+serverPort)) {
                 /*
                 System.out.println(address.substring(1));
                 System.out.println(port);
@@ -190,7 +191,7 @@ public class SnapshotCreator
 
                  */
                 try {
-                    connect_to(InetAddress.getByName(address.substring(1)), Integer.parseInt(port));
+                    connect_to(InetAddress.getByName(address), Integer.parseInt(port));
                 } catch (ConnectException e){
                     System.out.println("Connection refused from " + name);
                 }
