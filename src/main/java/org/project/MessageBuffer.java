@@ -1,6 +1,7 @@
 package org.project;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -9,6 +10,12 @@ class MessageBuffer
     static final Byte[] snapshotMessage =
             {(byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255,
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)112, (byte)255, (byte)255, (byte)255, (byte)255};
+    static final Byte[] reloadSnapMessage =
+            {(byte)255, (byte)255, (byte)255, (byte)255, (byte)115, (byte)255, (byte)255, (byte)255, (byte)255,
+             (byte)255, (byte)255, (byte)255, (byte)255, (byte)115, (byte)255, (byte)255, (byte)255, (byte)255};
+    static final Byte[] reloadSnapResp =
+            {(byte)255, (byte)255, (byte)255, (byte)255, (byte)118, (byte)255, (byte)255, (byte)255, (byte)255,
+             (byte)255, (byte)255, (byte)255, (byte)255, (byte)118, (byte)255, (byte)255, (byte)255, (byte)255};
     private final Map<String, List<Byte>> incomingMessages;
     private transient final SnapshotCreator snapshotManager;
 
@@ -43,6 +50,7 @@ class MessageBuffer
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
 
+        checkReloadSnapshot(name);
         int snapPosition = checkSnapshotMessage(name);
         if(snapshotManager.isSnapshotting())
         {
@@ -98,6 +106,29 @@ class MessageBuffer
         return -1;
     }
 
+    private void checkReloadSnapshot(String name)
+    {
+        for(int i=0; i <= incomingMessages.get(name).size()-reloadSnapMessage.length; i++)
+        {
+            if(incomingMessages.get(name).get(i).equals(reloadSnapMessage[0]))
+            {
+                if(incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).equals(Arrays.asList(reloadSnapMessage)))
+                {
+                    System.out.println("Reloading from snapshot message arrived");
+                    byte[] response = new byte[reloadSnapResp.length];
+                    for(int j=0; j<MessageBuffer.reloadSnapResp.length; j++)
+                        response[j] = MessageBuffer.reloadSnapResp[j];
+                    try {
+                        snapshotManager.getOutputStream(name).write(response);
+                        snapshotManager.closeConnection(name);
+                    } catch (IOException e)
+                    { throw new RuntimeException("Failed to send the response for reloading the snapshot"); }
+                    //TODO: chiamo un metodo di SnapshotCreator che ricarichi lo snapshot
+                    // deve chiudere il thread precedente e chiamare snapshotDeserialization
+                }
+            }
+        }
+    }
     public List<Byte> getMessages(String name){
         return incomingMessages.get(name);
     }

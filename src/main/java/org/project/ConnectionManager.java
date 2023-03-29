@@ -56,4 +56,9 @@ class ConnectionManager extends Thread
     public String getIp() {
         return name;
     }
+
+    public void close() throws IOException
+    {
+        socket.close();
+    }
 }

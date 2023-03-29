@@ -36,9 +36,6 @@ public class SnapshotCreator
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
-        //TODO: dovrei eseguire il metodo/i metodi che l'applicazione mi ha passato per riavviarla
-        // i messaggi salvati li devo mettere nel buffer non in savedMessages
-        // se non ci sono i file lancio FileNotFountException
         try{
 
             File messagesFile = new File("savedMessages"+identifier+".txt");
@@ -73,6 +70,7 @@ public class SnapshotCreator
         recoveredSystem.messages = new MessageBuffer(recoveredSystem);
         recoveredSystem.nameToConnection = new HashMap<>();
         recoveredSystem.connections = new ArrayList<>();
+        reloadSnapshotMessage(recoveredSystem.connectionNames);
         try {
             recoveredSystem.reconnect(recoveredSystem.connectionNames);
         } catch (IOException e) {
@@ -92,6 +90,33 @@ public class SnapshotCreator
         return recoveredSystem;
     }
 
+    private static void reloadSnapshotMessage(List<String> allConnections)
+    {
+        for(String name : allConnections)
+        {
+            name = name.split("/")[1];
+            String[] strings=name.split("-");
+            Socket socket = null;
+            byte[] reloadMessage = new byte[MessageBuffer.reloadSnapMessage.length];
+            byte[] reloadResponse = new byte[MessageBuffer.reloadSnapResp.length];
+            try {
+                socket = new Socket(InetAddress.getByName(strings[0]), Integer.parseInt(strings[1]));
+
+                for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
+                    reloadMessage[i] = MessageBuffer.reloadSnapMessage[i];
+                socket.getOutputStream().write(reloadMessage);
+                int respLength = socket.getInputStream().read(reloadResponse, 0, reloadResponse.length);
+                if(respLength!=MessageBuffer.reloadSnapResp.length)
+                    throw new RuntimeException("Connection Failed, the return message was malformed");
+                for(int i=0; i<respLength; i++)
+                {
+                    if(reloadResponse[i]!=MessageBuffer.reloadSnapResp[i])
+                        throw new RuntimeException("Connection Failed, the return message was malformed");
+                }
+                socket.close();
+            } catch (IOException e){ throw new RuntimeException("Connection Failed " + e.getMessage()); }
+        }
+    }
 
     /**
      * Constructor of the SnapshotCreator, which will add the controller to the context of the snapshot
@@ -102,8 +127,6 @@ public class SnapshotCreator
      * @throws IOException
      */
     public SnapshotCreator(ControllerInterface controller, int identifier, int serverPort) throws IOException
-    // TODO: there should be another parameter: the function to
-    //  be executed when reloading from a previous snapshot
     {
         connectionNames = new ArrayList<>();
         contextObjects = new ArrayList<>();
@@ -162,7 +185,11 @@ public class SnapshotCreator
         } catch (IOException e){
             throw e;
         }
+    }
 
+    synchronized public void closeConnection(String connectionName) throws IOException
+    {
+        nameToConnection.get(connectionName).close();
     }
 
     synchronized public void reconnect(List<String> connectionNames) throws IOException
@@ -352,22 +379,4 @@ public class SnapshotCreator
     public List<String> getConnections() {
         return this.connectionNames;
     }
-
-/*
-    public String readMessages(){
-        HashMap<String, ArrayList<Byte>> m = messages.getIncomingMessages();
-        String s=null;
-        for (String name: m.keySet()) {
-            System.out.println(name + " :");
-            ArrayList bytes = m.get(name);
-            byte b[] = new byte[bytes.size()];
-            for (int i = 0; i < bytes.size(); i++)
-                b[i] = (byte) bytes.get(i);
-            s = new String(b, StandardCharsets.UTF_8);
-            System.out.println(s);
-        }
-        return s;
-    }
-
- */
 }
