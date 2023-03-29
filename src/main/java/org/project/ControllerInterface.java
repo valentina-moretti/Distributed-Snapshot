@@ -8,6 +8,7 @@ import java.io.*;
 public interface ControllerInterface extends Runnable
 {
     void run();
+    void stop();
     void Serialize();
 
     public static ControllerInterface Deserialize(int id) throws FileNotFoundException {

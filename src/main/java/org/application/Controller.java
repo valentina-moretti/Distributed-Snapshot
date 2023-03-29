@@ -28,6 +28,7 @@ public class Controller implements ControllerInterface {
         }
     }
 
+    @Override
     public void run() {
         String s = "";
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
@@ -125,6 +126,12 @@ public class Controller implements ControllerInterface {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void stop()
+    {
+        //TODO: stop
     }
 
     @Override

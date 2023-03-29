@@ -70,18 +70,18 @@ public class SnapshotCreator
         recoveredSystem.messages = new MessageBuffer(recoveredSystem);
         recoveredSystem.nameToConnection = new HashMap<>();
         recoveredSystem.connections = new ArrayList<>();
-        reloadSnapshotMessage(recoveredSystem.connectionNames);
-        try {
-            recoveredSystem.reconnect(recoveredSystem.connectionNames);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         try {
             recoveredSystem.connectionAccepter = new ConnectionAccepter(recoveredSystem);
         } catch (IOException e) {
             e.printStackTrace();
         }
         recoveredSystem.connectionAccepter.start();
+        reloadSnapshotMessage(recoveredSystem.connectionNames);
+        try {
+            recoveredSystem.reconnect(recoveredSystem.connectionNames);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         recoveredSystem.snapshotArrivedFrom = new HashMap<>();
         SnapshotCreator.identifier = identifier;
 
@@ -100,7 +100,8 @@ public class SnapshotCreator
             byte[] reloadMessage = new byte[MessageBuffer.reloadSnapMessage.length];
             byte[] reloadResponse = new byte[MessageBuffer.reloadSnapResp.length];
             try {
-                socket = new Socket(InetAddress.getByName(strings[0]), Integer.parseInt(strings[1]));
+                //TODO: riconnessione non funge
+                socket = new Socket(strings[0], Integer.parseInt(strings[1]));
 
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
                     reloadMessage[i] = MessageBuffer.reloadSnapMessage[i];
@@ -113,7 +114,7 @@ public class SnapshotCreator
                     if(reloadResponse[i]!=MessageBuffer.reloadSnapResp[i])
                         throw new RuntimeException("Connection Failed, the return message was malformed");
                 }
-                socket.close();
+                try{ socket.close(); } catch (IOException ignored) {}
             } catch (IOException e){ throw new RuntimeException("Connection Failed " + e.getMessage()); }
         }
     }

@@ -62,8 +62,6 @@ public class Main {
 
             Farm f = controller.getFarm();
             f.addAnimal(new Animal("gatto"));
-
-
         }
     }
 }
