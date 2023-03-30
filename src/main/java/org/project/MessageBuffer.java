@@ -122,9 +122,14 @@ class MessageBuffer
                         snapshotManager.getOutputStream(name).write(response);
                     } catch (IOException e)
                     { throw new RuntimeException("Failed to send the response for reloading the snapshot"); }
-                    try { snapshotManager.closeConnection(name); } catch (IOException ignored) {}
                     //TODO: chiamo un metodo di SnapshotCreator che ricarichi lo snapshot
                     // deve chiudere il thread precedente e chiamare snapshotDeserialization
+                    try {
+                        for(String conn: snapshotManager.getConnections()) snapshotManager.closeConnection(conn);
+                        // snapshotManager.closeConnection(name);
+                    } catch (IOException ignored) {}
+                    snapshotManager.stopController();
+
                 }
             }
         }

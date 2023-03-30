@@ -237,6 +237,10 @@ public class SnapshotCreator
         }
     }
 
+    public void stopController() {
+        controller.stop();
+    }
+
     /**
      * getter for the input stream of a specific connection
      * @param connectionName string identifier of the connection
