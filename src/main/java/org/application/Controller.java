@@ -32,7 +32,6 @@ public class Controller implements ControllerInterface {
     public void run() {
         String s = "";
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
-        //todo: s non puo essere ancora quit
         while (!s.equals("quit")) {
             System.out.println("> ");
             try {
@@ -66,8 +65,6 @@ public class Controller implements ControllerInterface {
                     System.out.println("Which animal do you want to donate? ");
                     s = console.readLine();
                     out.println("Add animal "+s);
-
-                    //todo come si danno ordini regalo animale
 
                 } else if (s.equals("read")) {
                     if(sc.getConnections().size()==1){
@@ -226,7 +223,6 @@ public class Controller implements ControllerInterface {
             }
         };
         controllerThread.start();
-        //todo: there is no need of message recovery, right?
     }
 
 

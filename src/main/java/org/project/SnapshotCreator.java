@@ -106,16 +106,27 @@ public class SnapshotCreator
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
                     reloadMessage[i] = MessageBuffer.reloadSnapMessage[i];
                 socket.getOutputStream().write(reloadMessage);
+                long startTime = System.currentTimeMillis();
+                int timeout = 5000;
+                while(socket.getInputStream().available() < reloadResponse.length || (System.currentTimeMillis() - startTime) > timeout){
+                    Thread.sleep(100);
+                }
+                if(socket.getInputStream().available() < reloadResponse.length){
+                    throw new RuntimeException("No response in " + timeout/1000 + " seconds");
+                }
                 int respLength = socket.getInputStream().read(reloadResponse, 0, reloadResponse.length);
-                if(respLength!=MessageBuffer.reloadSnapResp.length)
-                    throw new RuntimeException("Connection Failed, the return message was malformed");
-                for(int i=0; i<respLength; i++)
+                System.out.println(reloadResponse);
+
+                for(int i=0; i<reloadResponse.length; i++)
                 {
                     if(reloadResponse[i]!=MessageBuffer.reloadSnapResp[i])
                         throw new RuntimeException("Connection Failed, the return message was malformed");
                 }
                 try{ socket.close(); } catch (IOException ignored) {}
-            } catch (IOException e){ throw new RuntimeException("Connection Failed " + e.getMessage()); }
+            } catch (IOException e){ throw new RuntimeException("Connection Failed " + e.getMessage()); } catch (
+                    InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
