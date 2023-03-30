@@ -100,7 +100,6 @@ public class SnapshotCreator
             byte[] reloadMessage = new byte[MessageBuffer.reloadSnapMessage.length];
             byte[] reloadResponse = new byte[MessageBuffer.reloadSnapResp.length];
             try {
-                //TODO: riconnessione non funge
                 socket = new Socket(strings[0], Integer.parseInt(strings[1]));
 
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
