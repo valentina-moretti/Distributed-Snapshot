@@ -53,8 +53,7 @@ public class Main {
             } else {
                 serverPort = Integer.parseInt(args[0]);
             }
-            System.out.println(serverPort);
-            //end server port
+            System.out.println("serverPort automatically assigned to " + serverPort);
 
             Controller controller = new Controller(identifier, serverPort);
             Thread controllerThread = new Thread(controller);

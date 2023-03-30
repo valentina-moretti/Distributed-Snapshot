@@ -15,9 +15,11 @@ public class Controller implements ControllerInterface {
     private int serverPort;
     private transient SnapshotCreator sc;
     private final int identifier;
+    private transient boolean stop;
 
 
     public Controller(int identifier, int serverPort) {
+        this.stop = false;
         this.identifier = identifier;
         this.serverPort = serverPort;
         this.farm = new Farm(this);
@@ -30,9 +32,11 @@ public class Controller implements ControllerInterface {
 
     @Override
     public void run() {
+        stop = false;
         String s = "";
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
-        while (!s.equals("quit")) {
+        while (!s.equals("quit") && !stop) {
+            if (sc.ControllerHasToStop()) stop();
             System.out.println("> ");
             try {
                 s = console.readLine();
@@ -128,7 +132,7 @@ public class Controller implements ControllerInterface {
     @Override
     public void stop()
     {
-        //TODO: stop
+        this.stop = true;
     }
 
     @Override

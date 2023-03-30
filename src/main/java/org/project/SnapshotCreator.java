@@ -13,7 +13,7 @@ import java.util.*;
 
 public class SnapshotCreator
 {
-    static int serverPort;
+    private static int serverPort;
     private List<Object> contextObjects;
     private transient ControllerInterface controller;
     private transient MessageBuffer messages;
@@ -25,6 +25,7 @@ public class SnapshotCreator
     private Map<String, Boolean> snapshotArrivedFrom;
     private transient Map<String, ArrayList<Byte>> savedMessages;
     static int identifier;
+    private boolean stopController;
 
     /**
      * @return a SnapshotCreator object reconstructed from the file named "lastSnapshot"
@@ -90,6 +91,10 @@ public class SnapshotCreator
         return recoveredSystem;
     }
 
+    public static int getServerPort(){
+        return serverPort;
+    }
+
     private static void reloadSnapshotMessage(List<String> allConnections)
     {
         for(String name : allConnections)
@@ -122,7 +127,10 @@ public class SnapshotCreator
                         throw new RuntimeException("Connection Failed, the return message was malformed");
                 }
                 try{ socket.close(); } catch (IOException ignored) {}
-            } catch (IOException e){ throw new RuntimeException("Connection Failed " + e.getMessage()); } catch (
+            } catch (IOException e){
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            } catch (
                     InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -139,6 +147,9 @@ public class SnapshotCreator
      */
     public SnapshotCreator(ControllerInterface controller, int identifier, int serverPort) throws IOException
     {
+        SnapshotCreator.serverPort = serverPort;
+        SnapshotCreator.identifier = identifier;
+        stopController = false;
         connectionNames = new ArrayList<>();
         contextObjects = new ArrayList<>();
         contextObjects.add(controller);
@@ -150,10 +161,12 @@ public class SnapshotCreator
         snapshotting = false;
         snapshotArrivedFrom = new HashMap<>();
         savedMessages = new HashMap<>();
-        SnapshotCreator.serverPort = serverPort;
-        SnapshotCreator.identifier = identifier;
         this.controller = controller;
 
+    }
+
+    void closeAccepter() throws IOException {
+        connectionAccepter.closeServerSocket();
     }
 
 
@@ -237,8 +250,16 @@ public class SnapshotCreator
         }
     }
 
-    public void stopController() {
-        controller.stop();
+    void stopController() {
+        this.stopController = true;
+    }
+
+    public boolean ControllerHasToStop() {
+        return stopController;
+    }
+
+    public static int getIdentifier() {
+        return identifier;
     }
 
     /**

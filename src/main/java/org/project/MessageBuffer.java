@@ -1,6 +1,7 @@
 package org.project;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -122,13 +123,20 @@ class MessageBuffer
                         snapshotManager.getOutputStream(name).write(response);
                     } catch (IOException e)
                     { throw new RuntimeException("Failed to send the response for reloading the snapshot"); }
-                    //TODO: chiamo un metodo di SnapshotCreator che ricarichi lo snapshot
-                    // deve chiudere il thread precedente e chiamare snapshotDeserialization
                     try {
                         for(String conn: snapshotManager.getConnections()) snapshotManager.closeConnection(conn);
-                        // snapshotManager.closeConnection(name);
                     } catch (IOException ignored) {}
                     snapshotManager.stopController();
+                    try {
+                        snapshotManager.closeAccepter();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    try {
+                        SnapshotCreator.snapshotDeserialization(SnapshotCreator.getIdentifier());
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
 
                 }
             }
