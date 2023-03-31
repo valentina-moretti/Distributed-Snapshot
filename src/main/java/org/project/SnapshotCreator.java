@@ -8,6 +8,8 @@ import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
@@ -71,6 +73,8 @@ public class SnapshotCreator
         recoveredSystem.messages = new MessageBuffer(recoveredSystem);
         recoveredSystem.nameToConnection = new HashMap<>();
         recoveredSystem.connections = new ArrayList<>();
+        recoveredSystem.snapshotArrivedFrom = new HashMap<>();
+        SnapshotCreator.identifier = identifier;
         try {
             recoveredSystem.connectionAccepter = new ConnectionAccepter(recoveredSystem);
         } catch (IOException e) {
@@ -83,8 +87,7 @@ public class SnapshotCreator
         } catch (IOException e) {
             e.printStackTrace();
         }
-        recoveredSystem.snapshotArrivedFrom = new HashMap<>();
-        SnapshotCreator.identifier = identifier;
+
 
         new Thread(recoveredController).start();
         System.out.println("Recovered Controller is running.");
@@ -105,6 +108,7 @@ public class SnapshotCreator
             byte[] reloadMessage = new byte[MessageBuffer.reloadSnapMessage.length];
             byte[] reloadResponse = new byte[MessageBuffer.reloadSnapResp.length];
             try {
+                System.out.println("Trying to connect to: " + strings[0] + "-" + strings[1]);
                 socket = new Socket(strings[0], Integer.parseInt(strings[1]));
 
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
@@ -112,7 +116,7 @@ public class SnapshotCreator
                 socket.getOutputStream().write(reloadMessage);
                 long startTime = System.currentTimeMillis();
                 int timeout = 5000;
-                while(socket.getInputStream().available() < reloadResponse.length || (System.currentTimeMillis() - startTime) > timeout){
+                while(socket.getInputStream().available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
                     Thread.sleep(100);
                 }
                 if(socket.getInputStream().available() < reloadResponse.length){
@@ -176,13 +180,49 @@ public class SnapshotCreator
      */
     synchronized void connectionAccepted(Socket connection)
     {
-        String name = connection.getInetAddress().toString() + "-" + connection.getPort();
-        ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
-        connectionNames.add(name);
-        connections.add(newConnectionM);
-        messages.addClient(name);
-        nameToConnection.put(name, newConnectionM);
-        newConnectionM.start();
+        String name;
+        InputStream inputStream;
+        try {
+            // Chi ha chiesto la connessione ha @tiemout ms per mandare il proprio ip e porta del serversocket.
+            // Ne ho bisogno per la riconnessione
+            long startTime = System.currentTimeMillis();
+            int timeout = 5000;
+            inputStream = connection.getInputStream();
+            System.out.println("Available: " + inputStream.available());
+            while((System.currentTimeMillis() - startTime) < timeout){
+                Thread.sleep(100);
+            }
+            System.out.println("Available: " + inputStream.available());
+            byte[] buffer = new byte[1024];
+            int bytesRead = inputStream.read(buffer);
+            String message = new String(buffer, 0, bytesRead);
+            System.out.println(message);
+            String[] parts = message.split("-");
+            String clientAddress = parts[0];
+            int clientPort = Integer.parseInt(parts[1]);
+            name = clientAddress + "-" + clientPort;
+            /*
+            Socket clientSocket;
+            try{
+                clientSocket = new Socket(clientAddress, clientPort);
+            } catch (UnknownHostException | SecurityException e){
+                e.printStackTrace();
+                return;
+            }
+            */
+            String ack = "ack";
+            connection.getOutputStream().write(ack.getBytes());
+            ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
+            connectionNames.add(name);
+            connections.add(newConnectionM);
+            messages.addClient(name);
+            nameToConnection.put(name, newConnectionM);
+            newConnectionM.start();
+            System.out.println("Successfully connected to " + name);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -196,18 +236,45 @@ public class SnapshotCreator
     synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
         String name = address.toString() + "-" + port;
-        Socket socket = null;
+        Socket clientSocket = null;
         try {
-            socket = new Socket(address, port);
-            ConnectionManager newConnectionM = new ConnectionManager(socket, name, messages);
+            clientSocket = new Socket(address, port);
+            ConnectionManager newConnectionM = new ConnectionManager(clientSocket, name, messages);
             connectionNames.add(name);
             connections.add(newConnectionM);
             messages.addClient(name);
             nameToConnection.put(name, newConnectionM);
             newConnectionM.start();
-            return name;
-        } catch (IOException e){
-            throw e;
+            String message = clientSocket.getInetAddress().getHostAddress() + "-" + serverPort;
+            System.out.println(message);
+            getOutputStream(name).write(message.getBytes());
+
+            //Waiting for ack
+            InputStream inputStream = getInputStream(name);
+            long startTime = System.currentTimeMillis();
+            int timeout = 10000;
+            while((System.currentTimeMillis() - startTime) < timeout){
+                Thread.sleep(100);
+            }
+            System.out.println("Reading ack: ");
+            BufferedInputStream bis = new BufferedInputStream(inputStream);
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            for (int ack = bis.read(); ack != -1; ack = bis.read()) {
+                buf.write((byte) ack);
+            }
+            String ack = buf.toString(StandardCharsets.UTF_8);
+            System.out.println(ack);
+            if (ack.equals("ack")){
+                System.out.println("Successfully connected to " + name);
+                return name;
+            }
+            else {
+                closeConnection(name);
+                System.out.println("ACK not received from " + name + ", closing the connection");
+                return null;
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

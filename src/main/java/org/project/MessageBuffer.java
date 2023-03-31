@@ -60,8 +60,8 @@ class MessageBuffer
                 snapshotManager.messageDuringSnapshot
                         (name, new ArrayList<>(incomingMessages.get(name).subList(0, snapPosition)));
                 snapshotManager.snapshotMessageArrived(name);
-                // Rimuovo il messaggio di snapshot perchè se faccio read rompe tutto
-                incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size()).clear();
+
+
             }
             else
             {
@@ -76,8 +76,7 @@ class MessageBuffer
                 snapshotManager.messageDuringSnapshot(name,
                         new ArrayList<>(incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size())));
                 snapshotManager.snapshotMessageArrived(name);
-                // Rimuovo il messaggio di snapshot perchè se faccio read rompe tutto
-                incomingMessages.get(name).subList(snapPosition, incomingMessages.get(name).size()).clear();
+
 
 
             }
@@ -99,6 +98,7 @@ class MessageBuffer
             {
                 if(incomingMessages.get(name).subList(i, i+snapshotMessage.length).equals(Arrays.asList(snapshotMessage)))
                 {
+                    incomingMessages.get(name).subList(i, i+snapshotMessage.length).clear();
                     System.out.println("Snapshot message arrived");
                     return i;
                 }
@@ -115,7 +115,9 @@ class MessageBuffer
             {
                 if(incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).equals(Arrays.asList(reloadSnapMessage)))
                 {
-                    System.out.println("Reloading from snapshot message arrived");
+                    // todo: non entra mai qui dentro perchè è una nuovqa connessione non fatta con connect_to, so come fixarlo
+                    incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).clear();
+                    System.out.println("Reloading message arrived");
                     byte[] response = new byte[reloadSnapResp.length];
                     for(int j=0; j<MessageBuffer.reloadSnapResp.length; j++)
                         response[j] = MessageBuffer.reloadSnapResp[j];
@@ -135,6 +137,7 @@ class MessageBuffer
                     try {
                         SnapshotCreator.snapshotDeserialization(SnapshotCreator.getIdentifier());
                     } catch (FileNotFoundException e) {
+                        e.printStackTrace();
                         throw new RuntimeException(e);
                     }
 
