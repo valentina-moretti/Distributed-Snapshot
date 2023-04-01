@@ -35,7 +35,7 @@ public class Main {
         System.out.println(identifier);
 
         try {
-            SnapshotCreator.snapshotDeserialization(identifier);
+            SnapshotCreator.snapshotDeserialization(identifier, false);
             System.out.println("Deserialized.");
         }catch (FileNotFoundException e){
             System.out.println(e);

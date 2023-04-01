@@ -8,7 +8,6 @@ import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -35,7 +34,7 @@ public class SnapshotCreator
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    public static SnapshotCreator snapshotDeserialization(int identifier) throws FileNotFoundException
+    public static SnapshotCreator snapshotDeserialization(int identifier, boolean reloading) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
@@ -80,13 +79,21 @@ public class SnapshotCreator
         } catch (IOException e) {
             e.printStackTrace();
         }
+        List<String> oldConnections = recoveredSystem.connectionNames.stream().toList();
+        recoveredSystem.connectionNames.clear();
         recoveredSystem.connectionAccepter.start();
-        reloadSnapshotMessage(recoveredSystem.connectionNames);
+        if(!reloading) {
+            System.out.println("Reloading");
+            recoveredSystem.reloadSnapshotMessage(oldConnections);
+        }
         try {
-            recoveredSystem.reconnect(recoveredSystem.connectionNames);
+            System.out.println("Reconnecting");
+            recoveredSystem.reconnect(oldConnections);
+            System.out.println("Successfully reconnected to everyone.");
         } catch (IOException e) {
             e.printStackTrace();
         }
+
 
 
         new Thread(recoveredController).start();
@@ -98,39 +105,39 @@ public class SnapshotCreator
         return serverPort;
     }
 
-    private static void reloadSnapshotMessage(List<String> allConnections)
+    private void reloadSnapshotMessage(List<String> oldConnections)
     {
-        for(String name : allConnections)
+        System.out.println("Connections to be reloaded: " + oldConnections);
+        for(String name : oldConnections)
         {
-            name = name.split("/")[1];
+            System.out.println("Reloading " + name);
+            if(name.contains("/")) name = name.split("/")[1];
             String[] strings=name.split("-");
-            Socket socket = null;
             byte[] reloadMessage = new byte[MessageBuffer.reloadSnapMessage.length];
             byte[] reloadResponse = new byte[MessageBuffer.reloadSnapResp.length];
             try {
                 System.out.println("Trying to connect to: " + strings[0] + "-" + strings[1]);
-                socket = new Socket(strings[0], Integer.parseInt(strings[1]));
+                String connection = connect_to(InetAddress.getByName(strings[0]), Integer.parseInt(strings[1]));
 
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
                     reloadMessage[i] = MessageBuffer.reloadSnapMessage[i];
-                socket.getOutputStream().write(reloadMessage);
+                getOutputStream(connection).write(reloadMessage);
                 long startTime = System.currentTimeMillis();
                 int timeout = 5000;
-                while(socket.getInputStream().available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
+                while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
                     Thread.sleep(100);
                 }
-                if(socket.getInputStream().available() < reloadResponse.length){
-                    throw new RuntimeException("No response in " + timeout/1000 + " seconds");
-                }
-                int respLength = socket.getInputStream().read(reloadResponse, 0, reloadResponse.length);
-                System.out.println(reloadResponse);
+                int respLength = getInputStream(connection).read(reloadResponse, 0, reloadResponse.length);
+                System.out.println("Reload message: " + Arrays.toString(reloadResponse));
 
                 for(int i=0; i<reloadResponse.length; i++)
                 {
                     if(reloadResponse[i]!=MessageBuffer.reloadSnapResp[i])
                         throw new RuntimeException("Connection Failed, the return message was malformed");
                 }
-                try{ socket.close(); } catch (IOException ignored) {}
+                try{
+                    System.out.println("Reload ok, closing connection with " + connection);
+                    closeConnection(connection); } catch (IOException e) {e.printStackTrace();}
             } catch (IOException e){
                 e.printStackTrace();
                 throw new RuntimeException(e);
@@ -186,7 +193,7 @@ public class SnapshotCreator
             // Chi ha chiesto la connessione ha @tiemout ms per mandare il proprio ip e porta del serversocket.
             // Ne ho bisogno per la riconnessione
             long startTime = System.currentTimeMillis();
-            int timeout = 5000;
+            int timeout = 2000;
             inputStream = connection.getInputStream();
             System.out.println("Available: " + inputStream.available());
             while((System.currentTimeMillis() - startTime) < timeout){
@@ -245,14 +252,14 @@ public class SnapshotCreator
             messages.addClient(name);
             nameToConnection.put(name, newConnectionM);
             newConnectionM.start();
-            String message = clientSocket.getInetAddress().getHostAddress() + "-" + serverPort;
+            String message = clientSocket.getInetAddress().getHostAddress() + "-" + getServerPort();
             System.out.println(message);
             getOutputStream(name).write(message.getBytes());
 
             //Waiting for ack
             InputStream inputStream = getInputStream(name);
             long startTime = System.currentTimeMillis();
-            int timeout = 10000;
+            int timeout = 4000;
             while((System.currentTimeMillis() - startTime) < timeout){
                 Thread.sleep(100);
             }
@@ -286,33 +293,29 @@ public class SnapshotCreator
     synchronized public void reconnect(List<String> connectionNames) throws IOException
     {
         List<String> oldConnections = connectionNames.stream().toList();
-        connectionNames.clear();
         String address;
         String port;
         Socket socket = null;
         String[] strings;
         String my_address=InetAddress.getLocalHost().toString().split("/")[1].split("\\.")[3];
-
+        System.out.println("I have to reconnect to: " + oldConnections);
         for(String name: oldConnections){
-            name = name.split("/")[1];
+            System.out.println("Reconnecting to: " + name);
+            if (name.contains("/")) name = name.split("/")[1];
             strings=name.split("-");
             address=strings[0];
             String lastIp = address.split("\\.")[3];
             port=strings[1];
-
             if(Integer.parseInt(lastIp+port)>Integer.parseInt(my_address+serverPort)) {
-                /*
-                System.out.println(address.substring(1));
-                System.out.println(port);
-                System.out.println(InetAddress.getByName(address.substring(1)));
-                System.out.println(Integer.parseInt(port));
-
-                 */
+                System.out.println(lastIp +" + " + port + " > " + my_address + " + " + serverPort);
                 try {
                     connect_to(InetAddress.getByName(address), Integer.parseInt(port));
                 } catch (ConnectException e){
                     System.out.println("Connection refused from " + name);
                 }
+            }
+            else{
+                System.out.println("Waiting for " + name + " to connect to me!");
             }
         }
     }

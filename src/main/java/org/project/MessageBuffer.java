@@ -115,7 +115,6 @@ class MessageBuffer
             {
                 if(incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).equals(Arrays.asList(reloadSnapMessage)))
                 {
-                    // todo: non entra mai qui dentro perchè è una nuovqa connessione non fatta con connect_to, so come fixarlo
                     incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).clear();
                     System.out.println("Reloading message arrived");
                     byte[] response = new byte[reloadSnapResp.length];
@@ -126,7 +125,10 @@ class MessageBuffer
                     } catch (IOException e)
                     { throw new RuntimeException("Failed to send the response for reloading the snapshot"); }
                     try {
-                        for(String conn: snapshotManager.getConnections()) snapshotManager.closeConnection(conn);
+                        for(String conn: snapshotManager.getConnections()){
+                            System.out.println("Closing connection with " + conn);
+                            snapshotManager.closeConnection(conn);
+                        }
                     } catch (IOException ignored) {}
                     snapshotManager.stopController();
                     try {
@@ -135,7 +137,7 @@ class MessageBuffer
                         throw new RuntimeException(e);
                     }
                     try {
-                        SnapshotCreator.snapshotDeserialization(SnapshotCreator.getIdentifier());
+                        SnapshotCreator.snapshotDeserialization(SnapshotCreator.getIdentifier(), true);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
