@@ -40,7 +40,12 @@ public class Controller implements ControllerInterface {
             System.out.println("> ");
             try {
                 s = console.readLine();
-                if (s.equals("connect")) {
+                if (sc.ControllerHasToStop()){
+                    stop();
+                    System.out.println("Stopping controller");
+                    return;
+                }
+                else if (s.equals("connect")) {
                     System.out.println("ip: ");
                     s = console.readLine();
                     Scanner scanner = new Scanner(System.in);

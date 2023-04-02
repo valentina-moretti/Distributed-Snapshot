@@ -193,7 +193,7 @@ public class SnapshotCreator
             // Chi ha chiesto la connessione ha @tiemout ms per mandare il proprio ip e porta del serversocket.
             // Ne ho bisogno per la riconnessione
             long startTime = System.currentTimeMillis();
-            int timeout = 2000;
+            int timeout = 1000;
             inputStream = connection.getInputStream();
             System.out.println("Available: " + inputStream.available());
             while((System.currentTimeMillis() - startTime) < timeout){
@@ -259,7 +259,7 @@ public class SnapshotCreator
             //Waiting for ack
             InputStream inputStream = getInputStream(name);
             long startTime = System.currentTimeMillis();
-            int timeout = 4000;
+            int timeout = 2500;
             while((System.currentTimeMillis() - startTime) < timeout){
                 Thread.sleep(100);
             }
