@@ -61,7 +61,7 @@ public class Controller implements ControllerInterface {
                     System.out.println(sc.getConnections());
                 } else if (s.equals("give animal")) {
                     if(sc.getConnections().size()==1){
-                        s = sc.getConnections().get(0);
+                        s = sc.getConnections().iterator().next();
                     }
                     else {
                         System.out.println("Select connection from: ");
@@ -77,7 +77,7 @@ public class Controller implements ControllerInterface {
 
                 } else if (s.equals("read")) {
                     if(sc.getConnections().size()==1){
-                        s = sc.getConnections().get(0);
+                        s = sc.getConnections().iterator().next();
                     }
                     else {
                         System.out.println("Select connection from: ");
@@ -122,7 +122,7 @@ public class Controller implements ControllerInterface {
                         e.printStackTrace();
                     }
 
-                    OutputStream outputStream = sc.getOutputStream(sc.getConnections().get(0));
+                    OutputStream outputStream = sc.getOutputStream(sc.getConnections().iterator().next());
                     PrintWriter out = new PrintWriter(outputStream, true);
                     out.println("Add animal pollo");
                     System.out.println("Pollo sent.");

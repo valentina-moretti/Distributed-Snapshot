@@ -14,11 +14,11 @@ import java.util.*;
 
 public class SnapshotCreator
 {
-    private static int serverPort;
-    private List<Object> contextObjects;
+    private final int serverPort;
+    private final List<Object> contextObjects;
     private transient ControllerInterface controller;
     private transient MessageBuffer messages;
-    private List<String> connectionNames;
+    private final Set<String> connectionNames;
     private transient Map<String, ConnectionManager> nameToConnection;
     private transient List<ConnectionManager> connections;
     private transient ConnectionAccepter connectionAccepter;
@@ -34,7 +34,7 @@ public class SnapshotCreator
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    public static SnapshotCreator snapshotDeserialization(int identifier, boolean reloading) throws FileNotFoundException
+    public static SnapshotCreator snapshotDeserialization(int identifier, int serverPort, boolean reloading) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
@@ -101,7 +101,7 @@ public class SnapshotCreator
         return recoveredSystem;
     }
 
-    public static int getServerPort(){
+    public int getServerPort(){
         return serverPort;
     }
 
@@ -122,13 +122,14 @@ public class SnapshotCreator
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
                     reloadMessage[i] = MessageBuffer.reloadSnapMessage[i];
                 getOutputStream(connection).write(reloadMessage);
+                System.out.println("Reload message sent to " + name + ". Waiting for the reload response");
                 long startTime = System.currentTimeMillis();
                 int timeout = 5000;
                 while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
                     Thread.sleep(100);
                 }
                 int respLength = getInputStream(connection).read(reloadResponse, 0, reloadResponse.length);
-                System.out.println("Reload message: " + Arrays.toString(reloadResponse));
+                System.out.println("Reload response: " + Arrays.toString(reloadResponse));
 
                 for(int i=0; i<reloadResponse.length; i++)
                 {
@@ -158,10 +159,10 @@ public class SnapshotCreator
      */
     public SnapshotCreator(ControllerInterface controller, int identifier, int serverPort) throws IOException
     {
-        SnapshotCreator.serverPort = serverPort;
+        this.serverPort = serverPort;
         SnapshotCreator.identifier = identifier;
         stopController = false;
-        connectionNames = new ArrayList<>();
+        connectionNames = new HashSet<>();
         contextObjects = new ArrayList<>();
         contextObjects.add(controller);
         messages = new MessageBuffer(this);
@@ -190,7 +191,7 @@ public class SnapshotCreator
         String name;
         InputStream inputStream;
         try {
-            // Chi ha chiesto la connessione ha @tiemout ms per mandare il proprio ip e porta del serversocket.
+            // Chi ha chiesto la connessione ha @timeout ms per mandare il proprio ip e porta del serversocket.
             // Ne ho bisogno per la riconnessione
             long startTime = System.currentTimeMillis();
             int timeout = 1000;
@@ -203,7 +204,7 @@ public class SnapshotCreator
             byte[] buffer = new byte[1024];
             int bytesRead = inputStream.read(buffer);
             String message = new String(buffer, 0, bytesRead);
-            System.out.println(message);
+            System.out.println("Message: " + message);
             String[] parts = message.split("-");
             String clientAddress = parts[0];
             int clientPort = Integer.parseInt(parts[1]);
@@ -253,7 +254,7 @@ public class SnapshotCreator
             nameToConnection.put(name, newConnectionM);
             newConnectionM.start();
             String message = clientSocket.getInetAddress().getHostAddress() + "-" + getServerPort();
-            System.out.println(message);
+            System.out.println("Sending my address and port: " + message);
             getOutputStream(name).write(message.getBytes());
 
             //Waiting for ack
@@ -288,6 +289,7 @@ public class SnapshotCreator
     synchronized public void closeConnection(String connectionName) throws IOException
     {
         nameToConnection.get(connectionName).close();
+        connectionNames.remove(connectionName);
     }
 
     synchronized public void reconnect(List<String> connectionNames) throws IOException
@@ -307,7 +309,7 @@ public class SnapshotCreator
             String lastIp = address.split("\\.")[3];
             port=strings[1];
             if(Integer.parseInt(lastIp+port)>Integer.parseInt(my_address+serverPort)) {
-                System.out.println(lastIp +" + " + port + " > " + my_address + " + " + serverPort);
+                System.out.println(lastIp +" + " + port + " > " + my_address + " + " + serverPort + ": I have to reconnect");
                 try {
                     connect_to(InetAddress.getByName(address), Integer.parseInt(port));
                 } catch (ConnectException e){
@@ -316,6 +318,16 @@ public class SnapshotCreator
             }
             else{
                 System.out.println("Waiting for " + name + " to connect to me!");
+                long startTime = System.currentTimeMillis();
+                int timeout = 5000;
+                while((System.currentTimeMillis() - startTime) < timeout && !connectionNames.contains(name)){
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (!connectionNames.contains(name)) throw new RuntimeException(name + "Is not trying to reconnect to me");
             }
         }
     }
@@ -482,7 +494,7 @@ public class SnapshotCreator
         controller.Serialize();
     }
 
-    public List<String> getConnections() {
+    public Set<String> getConnections() {
         return this.connectionNames;
     }
 }

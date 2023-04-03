@@ -34,26 +34,30 @@ public class Main {
         }
         System.out.println(identifier);
 
+        //server port
+        int serverPort;
+        if (args.length == 0) {
+            Scanner s = new Scanner(System.in);
+            System.out.println("Port: ");
+            try {
+                serverPort = s.nextInt();
+            } catch (Exception ee) {
+                serverPort = 35002 + identifier;
+                System.out.println("serverPort automatically assigned to " + serverPort);
+            }
+
+        } else {
+            serverPort = Integer.parseInt(args[0]);
+        }
+        System.out.println("Server Port: " + serverPort);
+
         try {
-            SnapshotCreator.snapshotDeserialization(identifier, false);
+            SnapshotCreator.snapshotDeserialization(identifier, serverPort, false);
             System.out.println("Deserialized.");
         }catch (FileNotFoundException e){
             System.out.println(e);
-            //server port
-            int serverPort;
-            if (args.length == 0) {
-                Scanner s = new Scanner(System.in);
-                System.out.println("Port: ");
-                try {
-                    serverPort = s.nextInt();
-                } catch (Exception ee) {
-                    serverPort = 35002 + identifier;
-                }
 
-            } else {
-                serverPort = Integer.parseInt(args[0]);
-            }
-            System.out.println("serverPort automatically assigned to " + serverPort);
+
 
             Controller controller = new Controller(identifier, serverPort);
             Thread controllerThread = new Thread(controller);
