@@ -65,4 +65,8 @@ class ConnectionManager extends Thread
     {
         socket.close();
     }
+
+    Socket getSocket() {
+        return socket;
+    }
 }

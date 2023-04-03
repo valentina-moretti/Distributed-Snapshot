@@ -152,11 +152,7 @@ public class SnapshotCreator
                 //Writing reload message
                 getOutputStream(connection).write(reloadMessage);
 
-                long startTime = System.currentTimeMillis();
-                int timeout = 1000;
-                while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
-                    Thread.sleep(100);
-                }
+                Thread.sleep(1000);
 
                 //Writing connections already reloaded
                 PrintWriter out = new PrintWriter(getOutputStream(connection), true);
@@ -171,12 +167,13 @@ public class SnapshotCreator
                     System.out.println("Sending already reloaded connection: " + c);
                     getOutputStream(connection).write(c.getBytes());
                     //Waiting for ack
-                    startTime = System.currentTimeMillis();
-                    timeout = 3000;
-                    while((System.currentTimeMillis() - startTime) < timeout){
+                    Thread.sleep(3000);
+                    System.out.println("Reading ack: ");
+                    long startTime = System.currentTimeMillis();
+                    long timeout = 6000;
+                    while(getInputStream(connection).available() < 3 && (System.currentTimeMillis() - startTime) < timeout){
                         Thread.sleep(100);
                     }
-                    System.out.println("Reading ack: ");
                     BufferedInputStream bis = new BufferedInputStream(getInputStream(connection));
                     ByteArrayOutputStream buf = new ByteArrayOutputStream();
                     for (int ack = bis.read(); ack != -1; ack = bis.read()) {
@@ -188,8 +185,8 @@ public class SnapshotCreator
                 }
 
 
-                startTime = System.currentTimeMillis();
-                timeout = 1000;
+                long startTime = System.currentTimeMillis();
+                long timeout = 1000;
                 while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
                     Thread.sleep(100);
                 }
@@ -289,6 +286,7 @@ public class SnapshotCreator
             String clientAddress = parts[0];
             int clientPort = Integer.parseInt(parts[1]);
             name = clientAddress + "-" + clientPort;
+            if(name.contains("/")) name = name.split("/")[1];
             /*
             Socket clientSocket;
             try{
@@ -325,6 +323,7 @@ public class SnapshotCreator
     synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
         String name = address.toString() + "-" + port;
+        if(name.contains("/")) name = name.split("/")[1];
         Socket clientSocket = null;
         try {
             clientSocket = new Socket(address, port);
@@ -581,14 +580,22 @@ public class SnapshotCreator
     }
 
     void ReloadMessageArrived(String name) {
-
+        System.out.println("Reload message arrived");
         reloadCount++;
         if(reloadCount == 1){
             System.out.println("Listening for already reloaded connections");
             // Listen for already reloaded connections
             InputStream in = getInputStream(name);
+            OutputStream out = null;
+            try {
+                out = getOutputStream(name);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
             BufferedInputStream bis = new BufferedInputStream(in);
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            PrintWriter Pout = new PrintWriter(out, true);
             long startTime = System.currentTimeMillis();
             int timeout = 20000;
             while((System.currentTimeMillis() - startTime) < timeout && reloadCount == 1){
@@ -597,14 +604,24 @@ public class SnapshotCreator
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-
                 try {
-                    System.out.println("Available in reload: " + in.available());
+                    System.out.println(in.available());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+
                 try {
                     if(in.available() > 0) {
+                        System.out.println("(Reload) Message arrived");
+
+                        for (int message = bis.read(); message != -1; message = bis.read()) {
+                            buf.write((byte) message);
+                        }
+                        String message = buf.toString(StandardCharsets.UTF_8);
+                        System.out.println("Message: " + message);
+
+                         /*
+
                         byte[] buffer = new byte[1024];
                         int bytesRead = 0;
                         try {
@@ -613,17 +630,17 @@ public class SnapshotCreator
                             throw new RuntimeException(e);
                         }
                         String message = new String(buffer, 0, bytesRead);
+
+                          */
+
+
                         System.out.println("Already Reloaded Connection Received: " + message);
 
                         //Removing it from reloadConnections
                         reloadConnections.put(message, false);
 
                         String ack = "ack";
-                        try {
-                            getOutputStream(name).write(ack.getBytes());
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                        out.write(ack.getBytes());
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);

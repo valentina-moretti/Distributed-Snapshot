@@ -116,8 +116,7 @@ class MessageBuffer
                 if(incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).equals(Arrays.asList(reloadSnapMessage)))
                 {
                     incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).clear();
-                    snapshotManager.ReloadMessageArrived(name);
-
+                    new Thread(() -> snapshotManager.ReloadMessageArrived(name)).start();
                 }
             }
         }
