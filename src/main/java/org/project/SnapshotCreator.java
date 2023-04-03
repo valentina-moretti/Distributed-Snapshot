@@ -8,17 +8,20 @@ import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
 public class SnapshotCreator
 {
+    int reloadCount;
     private final int serverPort;
     private final List<Object> contextObjects;
     private transient ControllerInterface controller;
     private transient MessageBuffer messages;
-    private final Set<String> connectionNames;
+    final HashSet<String> connectionNames;
+    Map<String, Boolean> reloadConnections;
     private transient Map<String, ConnectionManager> nameToConnection;
     private transient List<ConnectionManager> connections;
     private transient ConnectionAccepter connectionAccepter;
@@ -34,7 +37,7 @@ public class SnapshotCreator
      * @throws FileNotFoundException if the file "lastSnapshot" where the information about the latest
      * snapshot was not found or was corrupted
      */
-    public static SnapshotCreator snapshotDeserialization(int identifier, int serverPort, boolean reloading) throws FileNotFoundException
+    public static SnapshotCreator snapshotDeserialization(int identifier, int serverPort, Map<String, Boolean> reloadConn) throws FileNotFoundException
     {
         SnapshotCreator recoveredSystem = null;
         Map<String, ArrayList<Byte>> messages = null;
@@ -79,13 +82,28 @@ public class SnapshotCreator
         } catch (IOException e) {
             e.printStackTrace();
         }
-        List<String> oldConnections = recoveredSystem.connectionNames.stream().toList();
+        HashSet<String> oldConnections = new HashSet<>(recoveredSystem.getConnections());
+        System.out.println("Connections to be reloaded: " + oldConnections);
         recoveredSystem.connectionNames.clear();
         recoveredSystem.connectionAccepter.start();
-        if(!reloading) {
-            System.out.println("Reloading");
-            recoveredSystem.reloadSnapshotMessage(oldConnections);
+
+        HashSet<String> doNotReload = new HashSet<>();
+
+        if (reloadConn == null) doNotReload = new HashSet<>();
+        else{
+            for(String c: reloadConn.keySet()){
+                if(!reloadConn.get(c)) doNotReload.add(c);
+            }
         }
+        try {
+            doNotReload.add(InetAddress.getLocalHost().toString().split("/")[1]+"-"+recoveredSystem.serverPort);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+        System.out.println("Reloading");
+        recoveredSystem.reloadSnapshotMessage(oldConnections, doNotReload);
+
         try {
             System.out.println("Reconnecting");
             recoveredSystem.reconnect(oldConnections);
@@ -98,6 +116,11 @@ public class SnapshotCreator
 
         new Thread(recoveredController).start();
         System.out.println("Recovered Controller is running.");
+        recoveredSystem.reloadConnections = new HashMap<>();
+        for(String conn : recoveredSystem.connectionNames){
+            recoveredSystem.reloadConnections.put(conn, true);
+        }
+        recoveredSystem.reloadCount = 0;
         return recoveredSystem;
     }
 
@@ -105,9 +128,13 @@ public class SnapshotCreator
         return serverPort;
     }
 
-    private void reloadSnapshotMessage(List<String> oldConnections)
+    private void reloadSnapshotMessage(HashSet<String> oldConnections, HashSet<String> doNotReload)
     {
         System.out.println("Connections to be reloaded: " + oldConnections);
+        System.out.println("Connections not to be reloaded: " + doNotReload);
+        for (String c: doNotReload){
+            oldConnections.remove(c);
+        }
         for(String name : oldConnections)
         {
             System.out.println("Reloading " + name);
@@ -121,10 +148,58 @@ public class SnapshotCreator
 
                 for(int i=0; i<MessageBuffer.reloadSnapMessage.length; i++)
                     reloadMessage[i] = MessageBuffer.reloadSnapMessage[i];
+
+                //Writing reload message
                 getOutputStream(connection).write(reloadMessage);
-                System.out.println("Reload message sent to " + name + ". Waiting for the reload response");
+
                 long startTime = System.currentTimeMillis();
-                int timeout = 5000;
+                int timeout = 1000;
+                while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
+                    Thread.sleep(100);
+                }
+
+                //Writing connections already reloaded
+                PrintWriter out = new PrintWriter(getOutputStream(connection), true);
+                /*
+
+                String list = "";
+                for(String c: doNotReload) list = list + c + ";";
+                out.println(list);
+
+                 */
+                for(String c: doNotReload){
+                    System.out.println("Sending already reloaded connection: " + c);
+                    getOutputStream(connection).write(c.getBytes());
+                    //Waiting for ack
+                    startTime = System.currentTimeMillis();
+                    timeout = 3000;
+                    while((System.currentTimeMillis() - startTime) < timeout){
+                        Thread.sleep(100);
+                    }
+                    System.out.println("Reading ack: ");
+                    BufferedInputStream bis = new BufferedInputStream(getInputStream(connection));
+                    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                    for (int ack = bis.read(); ack != -1; ack = bis.read()) {
+                        buf.write((byte) ack);
+                    }
+                    String ack = buf.toString(StandardCharsets.UTF_8);
+                    System.out.println(ack);
+                    if(!ack.equals("ack")) throw new RuntimeException("Cannot get ack");
+                }
+
+
+                startTime = System.currentTimeMillis();
+                timeout = 1000;
+                while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
+                    Thread.sleep(100);
+                }
+
+                //Writing reload message again
+                getOutputStream(connection).write(reloadMessage);
+
+                System.out.println("Reload message, list of connections, and reload message again sent to " + name + ". Waiting for the reload response");
+                startTime = System.currentTimeMillis();
+                timeout = 10000;
                 while(getInputStream(connection).available() < reloadResponse.length && (System.currentTimeMillis() - startTime) < timeout){
                     Thread.sleep(100);
                 }
@@ -159,10 +234,15 @@ public class SnapshotCreator
      */
     public SnapshotCreator(ControllerInterface controller, int identifier, int serverPort) throws IOException
     {
+        reloadCount = 0;
         this.serverPort = serverPort;
         SnapshotCreator.identifier = identifier;
         stopController = false;
         connectionNames = new HashSet<>();
+        reloadConnections = new HashMap<>();
+        for(String conn : connectionNames){
+            reloadConnections.put(conn, true);
+        }
         contextObjects = new ArrayList<>();
         contextObjects.add(controller);
         messages = new MessageBuffer(this);
@@ -225,6 +305,7 @@ public class SnapshotCreator
             connections.add(newConnectionM);
             messages.addClient(name);
             nameToConnection.put(name, newConnectionM);
+            reloadConnections.put(name, true);
             newConnectionM.start();
             System.out.println("Successfully connected to " + name);
         } catch (IOException | InterruptedException e) {
@@ -249,6 +330,7 @@ public class SnapshotCreator
             clientSocket = new Socket(address, port);
             ConnectionManager newConnectionM = new ConnectionManager(clientSocket, name, messages);
             connectionNames.add(name);
+            reloadConnections.put(name, true);
             connections.add(newConnectionM);
             messages.addClient(name);
             nameToConnection.put(name, newConnectionM);
@@ -292,7 +374,7 @@ public class SnapshotCreator
         connectionNames.remove(connectionName);
     }
 
-    synchronized public void reconnect(List<String> connectionNames) throws IOException
+    synchronized public void reconnect(HashSet<String> connectionNames) throws IOException
     {
         List<String> oldConnections = connectionNames.stream().toList();
         String address;
@@ -494,7 +576,120 @@ public class SnapshotCreator
         controller.Serialize();
     }
 
-    public Set<String> getConnections() {
+    public HashSet<String> getConnections() {
         return this.connectionNames;
+    }
+
+    void ReloadMessageArrived(String name) {
+
+        reloadCount++;
+        if(reloadCount == 1){
+            System.out.println("Listening for already reloaded connections");
+            // Listen for already reloaded connections
+            InputStream in = getInputStream(name);
+            BufferedInputStream bis = new BufferedInputStream(in);
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            long startTime = System.currentTimeMillis();
+            int timeout = 20000;
+            while((System.currentTimeMillis() - startTime) < timeout && reloadCount == 1){
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                try {
+                    System.out.println("Available in reload: " + in.available());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    if(in.available() > 0) {
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = 0;
+                        try {
+                            bytesRead = in.read(buffer);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        String message = new String(buffer, 0, bytesRead);
+                        System.out.println("Already Reloaded Connection Received: " + message);
+
+                        //Removing it from reloadConnections
+                        reloadConnections.put(message, false);
+
+                        String ack = "ack";
+                        try {
+                            getOutputStream(name).write(ack.getBytes());
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+
+            return;
+
+            // Removing those connections from this.reloadConnections
+            /*
+            for (String conn : alreadyReloaded){
+                if(reloadConnections.containsKey(conn)) reloadConnections.put(conn, false);
+            }
+
+             */
+
+
+        }
+        // Marking this connection as already reloaded
+        try {
+            reloadConnections.put(InetAddress.getLocalHost().toString().split("/")[1]+"-"+serverPort, false);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        // Sending reload response
+        System.out.println("Reload message arrived");
+        byte[] response = new byte[MessageBuffer.reloadSnapResp.length];
+        for(int j=0; j<MessageBuffer.reloadSnapResp.length; j++)
+            response[j] = MessageBuffer.reloadSnapResp[j];
+        try {
+            getOutputStream(name).write(response);
+            System.out.println("Reload response written to " + name);
+            long t = System.currentTimeMillis();
+            while((System.currentTimeMillis() - t) < 7000) Thread.sleep(100);
+        } catch (IOException e)
+        { throw new RuntimeException("Failed to send the response for reloading the snapshot"); } catch (
+                InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        // Closing connections with everyone
+        try {
+            for(String conn: getConnections()){
+                System.out.println("Closing connection with " + conn);
+                closeConnection(conn);
+            }
+        } catch (IOException ignored) {}
+
+        // Stopping controller
+        stopController();
+
+        // Closing Accepter
+        try {
+            closeAccepter();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        //Snapshot Deserialization, passing reloadConnections updated
+        try {
+            SnapshotCreator.snapshotDeserialization(SnapshotCreator.getIdentifier(), getServerPort(), reloadConnections);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 }

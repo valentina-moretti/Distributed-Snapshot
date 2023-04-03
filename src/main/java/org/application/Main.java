@@ -52,7 +52,7 @@ public class Main {
         System.out.println("Server Port: " + serverPort);
 
         try {
-            SnapshotCreator.snapshotDeserialization(identifier, serverPort, false);
+            SnapshotCreator.snapshotDeserialization(identifier, serverPort, null);
             System.out.println("Deserialized.");
         }catch (FileNotFoundException e){
             System.out.println(e);

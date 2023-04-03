@@ -116,43 +116,15 @@ class MessageBuffer
                 if(incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).equals(Arrays.asList(reloadSnapMessage)))
                 {
                     incomingMessages.get(name).subList(i, i+reloadSnapMessage.length).clear();
-                    System.out.println("Reload message arrived");
-                    byte[] response = new byte[reloadSnapResp.length];
-                    for(int j=0; j<MessageBuffer.reloadSnapResp.length; j++)
-                        response[j] = MessageBuffer.reloadSnapResp[j];
-                    try {
-                        snapshotManager.getOutputStream(name).write(response);
-                        System.out.println("Reload response written to " + name);
-                        long t = System.currentTimeMillis();
-                        while((System.currentTimeMillis() - t) < 7000) Thread.sleep(100);
-                    } catch (IOException e)
-                    { throw new RuntimeException("Failed to send the response for reloading the snapshot"); } catch (
-                            InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try {
-                        for(String conn: snapshotManager.getConnections()){
-                            System.out.println("Closing connection with " + conn);
-                            snapshotManager.closeConnection(conn);
-                        }
-                    } catch (IOException ignored) {}
-                    snapshotManager.stopController();
-                    try {
-                        snapshotManager.closeAccepter();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try {
-                        SnapshotCreator.snapshotDeserialization(SnapshotCreator.getIdentifier(),snapshotManager.getServerPort(), true);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                        throw new RuntimeException(e);
-                    }
+                    snapshotManager.ReloadMessageArrived(name);
 
                 }
             }
         }
     }
+
+
+
     public List<Byte> getMessages(String name){
         return incomingMessages.get(name);
     }
