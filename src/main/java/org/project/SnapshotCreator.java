@@ -281,8 +281,7 @@ public class SnapshotCreator
                 Thread.sleep(100);
             }
             System.out.println("Available: " + inputStream.available());
-            BufferedReader bin = new BufferedReader(new InputStreamReader(inputStream));
-            String message = bin.readLine();
+            String message = readMessage(inputStream);
             String[] parts = message.split("-");
             String clientAddress = parts[0];
             int clientPort = Integer.parseInt(parts[1]);
@@ -360,7 +359,7 @@ public class SnapshotCreator
             result = readMessage(in);
 
         }
-        if (result != null && result == "ack"){
+        if (result != null && result.contains("ack")){
             System.out.println("Ack received from " + name);
             return true;
         } else {
@@ -381,8 +380,25 @@ public class SnapshotCreator
         return result;
 
          */
+        /*
         BufferedReader bin = new BufferedReader(new InputStreamReader(in));
         return bin.readLine();
+        */
+        byte[] buffer = new byte[1024];
+        String message = null;
+        int bytesRead = 0;
+        while(bytesRead == 0) {
+            try {
+                Thread.sleep(1000);
+                bytesRead = in.read(buffer);
+                if(bytesRead > 0) message = new String(buffer, 0, bytesRead);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        System.out.println("Message: " + message);
+        return message;
 
     }
 
