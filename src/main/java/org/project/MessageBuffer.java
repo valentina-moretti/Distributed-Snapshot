@@ -19,11 +19,21 @@ class MessageBuffer
              (byte)255, (byte)255, (byte)255, (byte)255, (byte)118, (byte)255, (byte)255, (byte)255, (byte)255};
     private final Map<String, List<Byte>> incomingMessages;
     private transient final SnapshotCreator snapshotManager;
+    private boolean pauseReceiver;
 
     MessageBuffer(SnapshotCreator snapshotCreator)
     {
         incomingMessages = new HashMap<>();
         snapshotManager = snapshotCreator;
+        pauseReceiver = false;
+    }
+
+    public boolean isPausedReceiver() {
+        return pauseReceiver;
+    }
+
+    public void setPauseReceiver(boolean pauseReceiver) {
+        this.pauseReceiver = pauseReceiver;
     }
 
     /**

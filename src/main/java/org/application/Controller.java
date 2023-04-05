@@ -121,9 +121,10 @@ public class Controller implements ControllerInterface {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
+                    System.out.println("Getting OutputStream");
                     OutputStream outputStream = sc.getOutputStream(sc.getConnections().iterator().next());
                     PrintWriter out = new PrintWriter(outputStream, true);
+                    System.out.println("Sending pollo");
                     out.println("Add animal pollo");
                     System.out.println("Pollo sent.");
 

@@ -298,6 +298,7 @@ public class SnapshotCreator
      */
     synchronized void connectionAccepted(Socket connection)
     {
+        System.out.println(" ** Accepting a connection! **");
         String name;
         InputStream inputStream;
         try {
@@ -306,11 +307,11 @@ public class SnapshotCreator
             long startTime = System.currentTimeMillis();
             int timeout = 1000;
             inputStream = connection.getInputStream();
-            System.out.println("Available: " + inputStream.available());
+            System.out.println("(Accepter) Available: " + inputStream.available());
             while((System.currentTimeMillis() - startTime) < timeout){
                 Thread.sleep(100);
             }
-            System.out.println("Available: " + inputStream.available());
+            System.out.println("(Accepter) Available: " + inputStream.available());
             String message = readMessage(inputStream);
             String[] parts = message.split("-");
             String clientAddress = parts[0];
@@ -328,7 +329,7 @@ public class SnapshotCreator
             */
             String ack = "ack";
             connection.getOutputStream().write(ack.getBytes());
-            System.out.println("Ack sent");
+            System.out.println("(Accepter) Ack sent");
             ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
             connectionNames.add(name);
             connections.add(newConnectionM);
@@ -336,7 +337,7 @@ public class SnapshotCreator
             nameToConnection.put(name, newConnectionM);
             reloadConnections.put(name, true);
             newConnectionM.start();
-            System.out.println("Successfully connected to " + name);
+            System.out.println("(Accepter) Successfully connected to " + name);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -351,10 +352,11 @@ public class SnapshotCreator
      * @return a String identifier of the connection created
      * @throws IOException
      */
-    synchronized public String connect_to(InetAddress address, Integer port) throws IOException
+    public String connect_to(InetAddress address, Integer port) throws IOException
     {
         String name = address.toString() + "-" + port;
         if(name.contains("/")) name = name.split("/")[1];
+        System.out.println("Connections before connecting to " + name + "\n" + connectionNames);
         Socket clientSocket = null;
         try {
             clientSocket = new Socket(address, port);
@@ -380,9 +382,12 @@ public class SnapshotCreator
     private boolean waitForAck(String name, int timeout) throws InterruptedException, IOException {
         System.out.println("Reading ack: ");
 
+        System.out.println(" --- Getting inputstream");
         InputStream in = getInputStream(name);
+        System.out.println(" --- Inpustream got");
         long startTime = System.currentTimeMillis();
         String result = null;
+        System.out.println(" --- Reading result");
         while( result == null && (System.currentTimeMillis() - startTime) < timeout){
             Thread.sleep(500);
             result = readMessage(in);
@@ -437,7 +442,7 @@ public class SnapshotCreator
         connectionNames.remove(connectionName);
     }
 
-    synchronized public void reconnect(HashSet<String> connectionNames) throws IOException, InterruptedException {
+    public void reconnect(HashSet<String> connectionNames) throws IOException, InterruptedException {
         List<String> oldConnections = connectionNames.stream().toList();
         String address;
         String port;
@@ -453,9 +458,11 @@ public class SnapshotCreator
             String lastIp = address.split("\\.")[3];
             port=strings[1];
             if(Integer.parseInt(lastIp+port)>Integer.parseInt(my_address+serverPort)) {
-                System.out.println(lastIp +" + " + port + " > " + my_address + " + " + serverPort + ": I have to reconnect");
+                //System.out.println(lastIp +" + " + port + " > " + my_address + " + " + serverPort + ": I have to reconnect");
                 try {
+                    messages.setPauseReceiver(true);
                     connect_to(InetAddress.getByName(address), Integer.parseInt(port));
+                    messages.setPauseReceiver(false);
                 } catch (ConnectException e){
                     System.out.println("Connection refused from " + name);
                 }
@@ -508,8 +515,9 @@ public class SnapshotCreator
      * @param connectionName string identifier of the connection
      * @return the input stream
      */
-    synchronized public InputStream getInputStream(String connectionName)
+    public InputStream getInputStream(String connectionName)
     {
+        System.out.println(" **** ");
         return new MyInputStream(messages, connectionName);
     }
 

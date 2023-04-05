@@ -14,13 +14,17 @@ class MyInputStream extends InputStream
 
     MyInputStream(MessageBuffer messageBuffer, String connectionName)
     {
+        System.out.println(" --- New MyInputStream");
         this.name = connectionName;
+        System.out.println(" --- msg");
         this.messageBuffer = messageBuffer;
+        System.out.println(" --- msg.getInputStream");
         this.inputStream = messageBuffer.getInputStream(name);
     }
 
     @Override
     synchronized public int read() throws IOException {
+        //this.inputStream = messageBuffer.getInputStream(name);
         if (inputStream.available() == 0) {
             //System.out.println("Original InputStream is not available. \nCreating a new one from messages");
             if (messageBuffer.getMessages(name).size()==0) return -1;
