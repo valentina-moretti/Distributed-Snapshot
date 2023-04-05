@@ -42,11 +42,18 @@ class MessageBuffer
      */
     synchronized void addMessage(String name, List<Byte> message)
     {
-        incomingMessages.get(name).addAll(message);
+        if(incomingMessages.containsKey(name)) {
+            incomingMessages.get(name).addAll(message);
+        }
+        else{
+            incomingMessages.put(name, new ArrayList<>());
+            incomingMessages.get(name).addAll(message);
+        }
     }
 
     synchronized InputStream getInputStream(String name)
     {
+        if(!incomingMessages.containsKey(name)) incomingMessages.put(name, new ArrayList<>());
         byte[] input = new byte[incomingMessages.get(name).size()];
         for(int i=0; i<incomingMessages.get(name).size(); i++)
             input[i] = incomingMessages.get(name).get(i);
