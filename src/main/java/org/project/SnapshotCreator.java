@@ -313,11 +313,11 @@ public class SnapshotCreator
             }
             System.out.println("(Accepter) Available: " + inputStream.available());
             String message = readMessage(inputStream);
+            if(message.contains("/")) message = message.split("/")[1];
             String[] parts = message.split("-");
             String clientAddress = parts[0];
             int clientPort = Integer.parseInt(parts[1]);
             name = clientAddress + "-" + clientPort;
-            if(name.contains("/")) name = name.split("/")[1];
             /*
             Socket clientSocket;
             try{
