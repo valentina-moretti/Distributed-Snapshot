@@ -124,6 +124,10 @@ class MessageBuffer
         return -1;
     }
 
+    /**
+     * We need a new thread here otherwise the thread cant't execute receive() anymore
+     * @param name
+     */
     private void checkReloadSnapshot(String name)
     {
         for(int i=0; i <= incomingMessages.get(name).size()-reloadSnapMessage.length; i++)

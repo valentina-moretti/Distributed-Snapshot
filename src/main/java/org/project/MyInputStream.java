@@ -22,6 +22,9 @@ class MyInputStream extends InputStream
         this.inputStream = messageBuffer.getInputStream(name);
     }
 
+    /*
+    *
+     */
     @Override
     synchronized public int read() throws IOException {
         //this.inputStream = messageBuffer.getInputStream(name);

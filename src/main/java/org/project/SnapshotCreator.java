@@ -139,6 +139,10 @@ public class SnapshotCreator
         try {
             System.out.println("Reconnecting");
             recoveredSystem.reconnect(oldConnections);
+            /* the while is needed because if my ip+port is such that is the other that will manage
+                the reconnection, I need to wait until the other makes the reconnection.
+                otherwise I go on without that connection recovered
+            */
             while (!recoveredSystem.connectionNames.containsAll(oldConnections)){
                 System.out.println("Old :" + oldConnections + "\nNew: " + recoveredSystem.connectionNames);
                 Thread.sleep(1000);

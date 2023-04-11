@@ -56,9 +56,6 @@ public class Main {
             System.out.println("Deserialized.");
         }catch (FileNotFoundException e){
             System.out.println(e);
-
-
-
             Controller controller = new Controller(identifier, serverPort);
             Thread controllerThread = new Thread(controller);
             controllerThread.start();
