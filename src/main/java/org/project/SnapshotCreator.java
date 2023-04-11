@@ -327,6 +327,10 @@ public class SnapshotCreator
                 return;
             }
             */
+
+            String ack = "ack";
+            connection.getOutputStream().write(ack.getBytes());
+            System.out.println("(Accepter) Ack sent");
             ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
             connectionNames.add(name);
             connections.add(newConnectionM);
@@ -334,9 +338,6 @@ public class SnapshotCreator
             nameToConnection.put(name, newConnectionM);
             reloadConnections.put(name, true);
             newConnectionM.start();
-            String ack = "ack";
-            getOutputStream(name).write(ack.getBytes());
-            System.out.println("(Accepter) Ack sent");
             System.out.println("(Accepter) Successfully connected to " + name);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
