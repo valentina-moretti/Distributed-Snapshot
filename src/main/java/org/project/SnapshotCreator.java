@@ -572,7 +572,6 @@ public class SnapshotCreator
     {
         System.out.println("Starting snapshot");
         saveState();
-        controller.Serialize();
         savedMessages.clear();
         snapshotArrivedFrom.clear();
         for(String connectionName : connectionNames){
