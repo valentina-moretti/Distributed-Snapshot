@@ -8,7 +8,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-connections
+
 public class Controller implements ControllerInterface {
     private Farm farm;
     private int serverPort;
