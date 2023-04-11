@@ -329,9 +329,9 @@ public class SnapshotCreator
             */
 
             String ack = "ack";
-            System.out.println(connection.isConnected());
-            connection.getOutputStream().flush();
-            connection.getOutputStream().write(ack.getBytes());
+            OutputStream out = connection.getOutputStream();
+            PrintWriter Pout = new PrintWriter(out, true);
+            Pout.println(ack);
             System.out.println("(Accepter) Ack sent");
             ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
             connectionNames.add(name);
@@ -374,7 +374,7 @@ public class SnapshotCreator
             getOutputStream(name).write(message.getBytes());
 
             //Waiting for ack
-            if(waitForAck(name, 5000)) return name;
+            if(waitForAck(name, 10000)) return name;
             closeConnection(name);
             return null;
         } catch (InterruptedException e) {
