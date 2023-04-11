@@ -459,22 +459,23 @@ public class SnapshotCreator
             String lastIp = address.split("\\.")[3];
             port=strings[1];
             Thread.sleep(5000);
-            if(Integer.parseInt(lastIp+port)>Integer.parseInt(my_address+serverPort) && !connectionNames.contains(name)) {
-                System.out.println(lastIp +" + " + port + " > " + my_address + " + " + serverPort + ": I have to reconnect");
-                try {
-                    messages.setPauseReceiver(true);
-                    connect_to(InetAddress.getByName(address), Integer.parseInt(port));
-                    messages.setPauseReceiver(false);
-                } catch (ConnectException e){
-                    System.out.println("Connection refused from " + name);
-                }
-            }
-            else{
-                System.out.println("Waiting for " + name + " to connect to me!");
-                while(!this.connectionNames.contains(name)) {
-                    System.out.println("Waiting for " + name);
-                    Thread.sleep(1000);
-                }
+            System.out.println("Connections: " + connectionNames);
+            if(!connectionNames.contains(name)) {
+                if (Integer.parseInt(lastIp + port) > Integer.parseInt(my_address + serverPort)) {
+                    System.out.println(lastIp + " + " + port + " > " + my_address + " + " + serverPort + ": I have to reconnect");
+                    try {
+                        messages.setPauseReceiver(true);
+                        connect_to(InetAddress.getByName(address), Integer.parseInt(port));
+                        messages.setPauseReceiver(false);
+                    } catch (ConnectException e) {
+                        System.out.println("Connection refused from " + name);
+                    }
+                } else {
+                    System.out.println("Waiting for " + name + " to connect to me!");
+                    while (!this.connectionNames.contains(name)) {
+                        System.out.println("Waiting for " + name);
+                        Thread.sleep(1000);
+                    }
                 /*
                 try {
                     Thread.sleep(1000);
@@ -496,6 +497,7 @@ public class SnapshotCreator
                 if (!this.connectionNames.contains(name)) throw new RuntimeException(name + "Is not trying to reconnect to me");
                 else System.out.println("Connections: " + this.connectionNames);
                 */
+                }
             }
         }
     }
