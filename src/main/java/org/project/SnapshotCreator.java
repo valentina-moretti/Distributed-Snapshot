@@ -366,7 +366,7 @@ public class SnapshotCreator
             //messages.addClient(name);
             nameToConnection.put(name, newConnectionM);
             newConnectionM.start();
-            String message = clientSocket.getInetAddress().getHostAddress() + "-" + getServerPort();
+            String message = InetAddress.getLocalHost() + "-" + getServerPort();
             System.out.println("Sending my address and port: " + message);
             getOutputStream(name).write(message.getBytes());
 
