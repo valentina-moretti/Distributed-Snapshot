@@ -161,7 +161,7 @@ public class SnapshotCreator
         return recoveredSystem;
     }
 
-    public int getServerPort(){
+    synchronized public int getServerPort(){
         return serverPort;
     }
 
@@ -291,7 +291,7 @@ public class SnapshotCreator
 
     }
 
-    void closeAccepter() throws IOException {
+    private void closeAccepter() throws IOException {
         connectionAccepter.closeServerSocket();
     }
 
@@ -356,7 +356,7 @@ public class SnapshotCreator
      * @return a String identifier of the connection created
      * @throws IOException
      */
-    public String connect_to(InetAddress address, Integer port) throws IOException
+    synchronized public String connect_to(InetAddress address, Integer port) throws IOException
     {
         String name = address.toString() + "-" + port;
         if(name.contains("/")) name = name.split("/")[1];
@@ -440,13 +440,13 @@ public class SnapshotCreator
 
     }
 
-    synchronized public void closeConnection(String connectionName) throws IOException
+    private void closeConnection(String connectionName) throws IOException
     {
         nameToConnection.get(connectionName).close();
         connectionNames.remove(connectionName);
     }
 
-    public void reconnect(HashSet<String> connectionNames) throws IOException, InterruptedException {
+    private void reconnect(HashSet<String> connectionNames) throws IOException, InterruptedException {
         List<String> oldConnections = connectionNames.stream().toList();
         String address;
         String port;
@@ -502,15 +502,15 @@ public class SnapshotCreator
         }
     }
 
-    void stopController() {
+    private void stopController() {
         this.stopController = true;
     }
 
-    public boolean ControllerHasToStop() {
+    synchronized public boolean ControllerHasToStop() {
         return stopController;
     }
 
-    public static int getIdentifier() {
+    synchronized public static int getIdentifier() {
         return identifier;
     }
 
@@ -519,7 +519,7 @@ public class SnapshotCreator
      * @param connectionName string identifier of the connection
      * @return the input stream
      */
-    public InputStream getInputStream(String connectionName)
+    synchronized public InputStream getInputStream(String connectionName)
     {
         System.out.println(" **** ");
         return new MyInputStream(messages, connectionName);
@@ -607,7 +607,7 @@ public class SnapshotCreator
      * As the state of the program was saved at the beginning of the snapshot, the messages arrived during
      * the snapshot are saved as well at the end of the snapshot
      */
-    synchronized private void stopSnapshot()
+    private void stopSnapshot()
     {
         System.out.println("Stopping snapshot");
         snapshotting = false;
@@ -648,7 +648,7 @@ public class SnapshotCreator
         return snapshotting;
     }
 
-    synchronized public void saveState()
+    private void saveState()
     {
         Gson gson = new Gson();
         String serializedObjects = gson.toJson(this);
@@ -665,11 +665,11 @@ public class SnapshotCreator
         controller.Serialize();
     }
 
-    public HashSet<String> getConnections() {
+    synchronized public HashSet<String> getConnections() {
         return this.connectionNames;
     }
 
-    void ReloadMessageArrived(String name) {
+    synchronized void ReloadMessageArrived(String name) {
         System.out.println("Reload message arrived");
         reloadCount++;
         if(reloadCount == 1){
