@@ -329,9 +329,7 @@ public class SnapshotCreator
             */
 
             String ack = "ack";
-            OutputStream out = connection.getOutputStream();
-            PrintWriter Pout = new PrintWriter(out, true);
-            Pout.println(ack);
+            connection.getOutputStream().write(ack.getBytes());
             System.out.println("(Accepter) Ack sent");
             ConnectionManager newConnectionM = new ConnectionManager(connection, name, messages);
             connectionNames.add(name);
@@ -374,31 +372,11 @@ public class SnapshotCreator
             getOutputStream(name).write(message.getBytes());
 
             //Waiting for ack
-            if(waitForAck(name, 10000)) return name;
+            if(waitForAck(name, 5000)) return name;
             closeConnection(name);
             return null;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private boolean waitForAck(InputStream in, int timeout) throws InterruptedException, IOException {
-        System.out.println("Reading ack: ");
-
-        long startTime = System.currentTimeMillis();
-        String result = null;
-        System.out.println(" --- Reading result");
-        while( result == null && (System.currentTimeMillis() - startTime) < timeout){
-            Thread.sleep(500);
-            result = readMessage(in);
-
-        }
-        if (result != null && result.contains("ack")){
-            System.out.println("Ack received");
-            return true;
-        } else {
-            System.out.println("ACK not received");
-            return false;
         }
     }
 
