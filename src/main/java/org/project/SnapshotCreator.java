@@ -459,7 +459,7 @@ public class SnapshotCreator
             String lastIp = address.split("\\.")[3];
             port=strings[1];
             Thread.sleep(3000);
-            System.out.println("Connections: " + connectionNames);
+            System.out.println("Connections: " + this.connectionNames);
             if(!this.connectionNames.contains(name)) {
                 if (Integer.parseInt(lastIp + port) > Integer.parseInt(my_address + serverPort)) {
                     System.out.println(lastIp + " + " + port + " > " + my_address + " + " + serverPort + ": I have to reconnect");
